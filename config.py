@@ -50,8 +50,8 @@ class PathsConfig:
         return {
             "input_ids": os.path.join(self.tokens_dir, f"{prefix}_inp.mmap"),
             "attention_mask": os.path.join(self.tokens_dir, f"{prefix}_att.mmap"),
-            "cuis": os.path.join(self.tokens_dir, f"{prefix}_cuis.mmap"),
-            "meta": os.path.join(self.tokens_dir, f"{prefix}_meta.mmap"),
+            "cuis": os.path.join(self.tokens_dir, f"{prefix}_cuis.npy"),
+            "meta": os.path.join(self.tokens_dir, f"{prefix}_meta.json"),
         }
 
     def get_default_token_groups(self):
