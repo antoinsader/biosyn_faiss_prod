@@ -5,7 +5,7 @@ import torch.optim as optim
 
 from config import  GlobalConfig
 from helpers.utils import  info_nce_loss, marginal_nll
-from MyEncoder import MyEncoder
+from main_classes.MyEncoder import MyEncoder
 
 # =======================
 #       Reranker
