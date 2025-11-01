@@ -99,27 +99,27 @@ class MyDataset(Dataset):
                 self.tokens_paths.queries_input_ids_path,
                 mode="r",
                 dtype=np.int32,
-                shape=self.tokens_paths.query_shape
+                shape=self.tokens_paths.queries_shape
             )
 
         self.queries_attention_mask = np.memmap(
                 self.tokens_paths.queries_attention_mask_path,
                 mode="r",
                 dtype=np.int32,
-                shape=self.tokens_paths.query_shape
+                shape=self.tokens_paths.queries_shape
             )
 
         self.dictionary_input_ids = np.memmap(
                 self.tokens_paths.dictionary_input_ids_path,
                 mode="r",
                 dtype=np.int32,
-                shape=self.tokens_paths.dict_shape
+                shape=self.tokens_paths.dictionary_shape
             )
         self.dictionary_attention_masks = np.memmap(
                 self.tokens_paths.dictionary_attention_mask_path,
                 mode="r",
                 dtype=np.int32,
-                shape=self.tokens_paths.dict_shape
+                shape=self.tokens_paths.dictionary_shape
             )
 
 
