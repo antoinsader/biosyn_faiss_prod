@@ -18,7 +18,7 @@ from collections import defaultdict
 
 
 from config import  GlobalConfig
-from utils import  get_labels
+from helpers.utils import 
 
 
 
@@ -162,9 +162,25 @@ class MyDataset(Dataset):
         query_candidates_cuis = np.array(self.dictionary_cuis)[candidate_idxs] #(batch_size, topk)
         #   if error_type == 'info_nce_loss', will return [batch_size] for each item is the first match 
         #       for marginal_nll error_type will return  (batch_size, topk) for each item 0 if false, 1 for true
-        labels = get_labels(query_candidates_cuis, query_cui, self.loss_type) 
+        labels = self.get_labels(query_candidates_cuis, query_cui) 
         return (query_tokens, candidate_tokens), labels
 
+
+    def get_labels(self, query_candidates_cuis, query_cui):
+        """
+            Generate labels for a query:
+            - InfoNCE: integer index of first positive, -100 if no match
+            - Marginal NLL: float vector of 0.0/1.0 per candidate
+        """
+        if self.loss_type == "info_nce_loss":
+            matches = np.where(query_candidates_cuis == query_cui)[0]
+            if len(matches) == 0:
+                return torch.tensor(-100, dtype=torch.long)
+            else:
+                return torch.tensor(matches[0], dtype=torch.long)
+        elif self.loss_type == "marginal_nll":
+            labels = (query_candidates_cuis == query_cui).astype(np.float32)
+            return torch.tensor(labels, dtype=torch.float)
 
 
     def change_candidates_pool(self):
