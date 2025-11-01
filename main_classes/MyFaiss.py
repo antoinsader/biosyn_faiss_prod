@@ -52,7 +52,6 @@ class MyFaiss():
 
         self.faiss_index = None
         self.dictionary_entries_n = None
-        self.faiss_index_name =None
 
 
     def _create_ivfpq_index(self, N):
