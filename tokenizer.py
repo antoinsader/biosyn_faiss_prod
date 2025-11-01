@@ -129,7 +129,7 @@ def split_queries(cfg: GlobalConfig, train_queries_key='train_queries', test_que
 
     test_inputs_mmap = np.memmap(
         test_queries_paths['input_ids'],
-        mode="r+",
+        mode="w+",
         dtype=np.int32,
         shape=new_test_inputs.shape
     )
@@ -138,7 +138,7 @@ def split_queries(cfg: GlobalConfig, train_queries_key='train_queries', test_que
 
     test_attention_mmap = np.memmap(
         test_queries_paths['attention_mask'],
-        mode="r+",
+        mode="w+",
         dtype=np.int32,
         shape=new_test_attentions.shape
     )
