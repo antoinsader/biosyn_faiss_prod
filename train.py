@@ -8,7 +8,8 @@ from transformers import get_linear_schedule_with_warmup
 import numpy as np
 from tqdm import tqdm
 
-from main_classes import MyFaiss, MyEncoder
+from main_classes.MyFaiss import MyFaiss
+from main_classes.MyEncoder import MyEncoder
 from main_classes.Reranker import Reranker 
 from helpers.Data import TokensPaths, MyDataset
 from helpers.MyLogger import MyLogger, CheckPointing
