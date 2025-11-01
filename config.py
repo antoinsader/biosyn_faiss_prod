@@ -132,7 +132,7 @@ class TrainingConfig:
 
     inject_hard_negatives_candidates:bool= True
     hard_negatives_num:int= 7
-    inject_hard_positives:bool= True
+    inject_hard_positives_candidates:bool= True
     hard_positives_num:int= 2
 
     freeze_lower_layer_epoch_max:int=2
