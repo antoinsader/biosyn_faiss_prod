@@ -189,8 +189,8 @@ if __name__=="__main__":
     if not cfg.tokenize.skip_tokenize_dictionary:
         print(f"Reading dictionary...")
         dictionary = load_dictionary(cfg.paths.dictionary_raw_path)
-        dictionary_cuis = [q[1] for q in train_queries]
-        dictionary_names = [q[0] for q in train_queries]
+        dictionary_cuis = [q[1] for q in dictionary]
+        dictionary_names = [q[0] for q in dictionary]
         np.save(tokens_paths.dictionary_cuis_path, dictionary_cuis)
 
         tokenize_names(dictionary_names, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length)
