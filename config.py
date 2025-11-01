@@ -271,10 +271,6 @@ def train_parse_args():
     parser.add_argument('--training_log_name', required=True,
                         help='Unique name for the training session')
 
-    parser.add_argument('--faiss_index_name', type=str, required=True,
-                        help='Either IndexHNSWFlat or IndexFlatIP')
-
-
 
     # optional
     parser.add_argument('--encoder_model_name',
@@ -307,8 +303,7 @@ def train_parse_args():
 
     if args.training_log_name:
         cfg.logger.train_log_name = args.training_log_name
-    if args.faiss_index_name:
-        cfg.faiss.index_name = args.faiss_index_name
+
     if args.encoder_model_name:
         cfg.model.model_name = args.encoder_model_name
     if args.num_workers:
