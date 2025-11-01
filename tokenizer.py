@@ -57,8 +57,9 @@ def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, ma
     att_mask_mmap.flush()
 
 def split_queries(cfg: GlobalConfig, train_queries_key='train_queries', test_queries_key='test_queries'):
-    train_queries_paths = cfg.paths.get_token_group(train_queries_key)
-    test_queries_paths = cfg.paths.get_token_group(test_queries_key)
+    token_groups =  cfg.paths.get_default_token_groups(train_queries_key)
+    train_queries_paths = token_groups[train_queries_key]
+    test_queries_paths = token_groups[test_queries_key]
 
     assert os.path.exists(train_queries_paths['input_ids']) and os.path.exists(train_queries_paths['attention_mask'])  and os.path.exists(train_queries_paths['cuis']), f'Trying to split the train queries but train queries tokens do not exits {train_queries_paths['input_ids']}'
 
