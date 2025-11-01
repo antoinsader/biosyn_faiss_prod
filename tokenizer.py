@@ -57,7 +57,7 @@ def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, ma
     att_mask_mmap.flush()
 
 def split_queries(cfg: GlobalConfig, train_queries_key='train_queries', test_queries_key='test_queries'):
-    token_groups =  cfg.paths.get_default_token_groups(train_queries_key)
+    token_groups =  cfg.paths.get_default_token_groups()
     train_queries_paths = token_groups[train_queries_key]
     test_queries_paths = token_groups[test_queries_key]
 
