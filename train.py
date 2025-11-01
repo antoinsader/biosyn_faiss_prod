@@ -32,7 +32,7 @@ class Trainer:
         self.device = "cuda"    if self.use_cuda else "cpu"
 
 
-        self.tokens_paths = TokensPaths(dictionary_key="dictionary", queries_key='train_queries')
+        self.tokens_paths = TokensPaths(cfg, dictionary_key="dictionary", queries_key='train_queries')
         self.encoder = MyEncoder(cfg)
         self.model = Reranker(self.encoder, self.cfg)
         self.dataset = MyDataset(self.tokens_paths, cfg)
