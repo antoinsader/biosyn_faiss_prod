@@ -64,7 +64,7 @@ print(f"CUI coverage after sampling: {coverage*100:.2f}%")
 small_dict_paths = cfg.paths.get_default_token_groups()['small_dictionary']
 np.save(small_dict_paths["cuis"] , dict_cuis_small)
 names_size = len(dict_cuis_small)
-max_length = tokens_paths.dict_shape[1]
+max_length = tokens_paths.dictionary_shape[1]
 print(f"Creating memmap...")
 input_ids_mmap = np.memmap(
     small_dict_paths["input_ids"],
