@@ -98,7 +98,7 @@ class MyFaiss():
 
     def init_index(self, N):
         if N >= 1_000_000:
-            self._create_ivfpq_index()
+            self._create_ivfpq_index(N)
             self.train_samples(N)
         else:
             self._create_flat_index()
