@@ -133,7 +133,7 @@ def split_queries(cfg: GlobalConfig, train_queries_key='train_queries', test_que
         dtype=np.int32,
         shape=new_test_inputs.shape
     )
-    test_inputs_mmap[:] = new_train_inputs[:]
+    test_inputs_mmap[:] = new_test_inputs[:]
     test_inputs_mmap.flush()
 
     test_attention_mmap = np.memmap(
@@ -142,7 +142,7 @@ def split_queries(cfg: GlobalConfig, train_queries_key='train_queries', test_que
         dtype=np.int32,
         shape=new_test_attentions.shape
     )
-    test_attention_mmap[:] = new_train_attentions[:]
+    test_attention_mmap[:] = new_test_attentions[:]
     meta = {"shape": test_attention_mmap.shape}
     with open(test_queries_paths['meta'], "w") as f:
         json.dump(meta, f)
