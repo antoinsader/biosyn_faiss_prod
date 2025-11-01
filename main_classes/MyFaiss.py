@@ -152,7 +152,7 @@ class MyFaiss():
             Build with batches the faiss dictionary, 
             dictionary_input_ids + dictionary_attention_masks ==> embed ==> index.add(emb)
         """
-        N = self.tokens_paths.dict_shape[0]
+        N = self.tokens_paths.dictionary_shape[0]
         self.dictionary_entries_n  = N
 
         if self.faiss_index is None:
@@ -180,7 +180,7 @@ class MyFaiss():
             Return candidates (queries_num , topk)
         """
 
-        (tokens_size, max_length ) = self.tokens_paths.query_shape
+        (tokens_size, max_length ) = self.tokens_paths.queries_shape
         N = tokens_size
         candidates = np.zeros((N,self.topk))
         faiss_index = self.faiss_index
