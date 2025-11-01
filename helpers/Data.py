@@ -43,13 +43,15 @@ class TokensPaths():
         self.dictionary_attention_mask_path = dictionary_paths['attention_mask']
         self.dictionary_cuis_path = dictionary_paths['cuis']
         self.dictionary_meta = dictionary_paths['meta']
-        self.dictionary_shape = self.load_mmap_shape(dictionary_paths['meta'])
+        if os.path.exists(dictionary_paths['meta']):
+            self.dictionary_shape = self.load_mmap_shape(dictionary_paths['meta'])
 
         self.queries_input_ids_path = queries_paths['input_ids']
         self.queries_attention_mask_path = queries_paths['attention_mask']
         self.queries_cuis_path = queries_paths['cuis']
         self.queries_meta = queries_paths['meta']
-        self.queries_shape = self.load_mmap_shape(queries_paths['meta'])
+        if os.path.exists(queries_paths['meta']):
+            self.queries_shape = self.load_mmap_shape(queries_paths['meta'])
 
 
     @staticmethod
