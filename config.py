@@ -158,7 +158,7 @@ class FaissConfig:
     def n_probe(self, num_clusters):
         #nprobe is the numbers of clusters to be visited during search, higher means more accurate but slower
         # 1-10% of nlist
-        return 0.06 * num_clusters
+        return int(0.06 * num_clusters)
 
     def clusters_samples(self, num_clusters):
         return 256 * num_clusters
