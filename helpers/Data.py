@@ -17,9 +17,9 @@ from tqdm import tqdm
 from collections import defaultdict
 
 
-from transformers import AutoModel
-from config import CheckPointModel, FaissConfig, GlobalConfig, LoggerConfig, ModelConfig, TrainingConfig, parse_args, paths
-from utils import compute_metrics, compute_metrics_eval, get_labels, get_pkl, info_nce_loss, load_mmap_shape, marginal_nll, save_pkl
+from config import  GlobalConfig
+from utils import  get_labels
+
 
 
 
