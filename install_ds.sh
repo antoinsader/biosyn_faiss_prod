@@ -7,8 +7,7 @@
 
 set -e
 
-# git clone https://github.com/antoinsader/reramker_test.git
-
+# git clone https://github.com/antoinsader/biosyn_faiss_prod
 
 
 
