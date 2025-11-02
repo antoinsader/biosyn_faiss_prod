@@ -79,7 +79,7 @@ class Reranker(nn.Module):
 
         # CALCULATE SCORE 
         score = torch.bmm(query_embeddings, candidates_embeddings.transpose(1, 2)).squeeze(1) #batch_size, topk
-        del candidates_embeddings, query_embeds
+        del candidates_embeddings, query_embeddings
         #score (batch_size, topk)
         return score
     
