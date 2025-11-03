@@ -95,5 +95,3 @@ class Reranker(nn.Module):
         outputs = outputs / self.cfg.loss_temperature
         loss = self.criterion(outputs, targets)
         return loss
-
-----------------------------------------------------------------------
