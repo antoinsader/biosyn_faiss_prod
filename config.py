@@ -117,7 +117,7 @@ class ModelConfig:
 
 @dataclass
 class TrainingConfig:
-    num_epochs: int = 13
+    num_epochs: int = 10
     batch_size: int = 16
     learning_rate: float = 5e-5
     weight_decay: float = 0.001
@@ -178,6 +178,7 @@ class GlobalConfig:
     eval_encoder_dir:str = ""
     eval_faiss_dir:str = ""
 
+    minimize_target= 500_000
     def to_dict(self):
         return {
             "model": vars(self.model),
@@ -240,10 +241,26 @@ def tokenizer_parse_args():
         cfg.tokenize.dictionary_max_length = args.dictionary_max_length
 
     if args.test_split_percentage:
+        assert 0.0 <= args.test_split_percentage <= 1.0 
         cfg.tokenize.test_split_percentage = args.test_split_percentage
 
     return cfg
 
+
+def minimize_parse_args():
+    cfg = GlobalConfig()
+    parser = argparse.ArgumentParser(description='ranker train')
+
+    parser.add_argument('--minimize_target', type=int,
+                        help='How many dictionary entries you want to keep, it should be more than the number of traindev entries ')
+
+
+    args = parser.parse_args()
+
+    if args.minimize_target:
+        cfg.minimize_target = args.minimize_target
+
+    return cfg
 
 def eval_parse_args():
     cfg = GlobalConfig()
@@ -258,7 +275,7 @@ def eval_parse_args():
     if args.result_encoder_dir:
         assert os.path.isdir(args.result_encoder_dir)
         cfg.paths.result_encoder_dir = args.result_encoder_dir
-
+    return cfg
 
 def train_parse_args():
     """
@@ -276,27 +293,27 @@ def train_parse_args():
     parser.add_argument('--encoder_model_name',
                         help='Directory for pretrained model', required=False)
     
-    parser.add_argument('--num_workers', help='Num workers ', type=int, required=False)
 
     parser.add_argument('--num_epochs', help='train num epochs', type=int, required=False)
     parser.add_argument('--train_batch_size', help='train batch size', type=int, required=False)
     parser.add_argument('--topk', help='train topk candidates', type=int, required=False)
 
+    parser.add_argument('--hard_positives_num', help='From topk specified, how many hard positive candidates to inject', type=int, required=False)
+    parser.add_argument('--hard_negatives_num', help='From topk specified, how many hard negative candidates to inject', type=int, required=False)
+
 
     parser.add_argument('--learning_rate', help='train learning rate', type=float, required=False)
     parser.add_argument('--weight_decay', help='train weight decay', type=float, required=False)
     parser.add_argument('--loss_type', help='Either marginal_nll or info_nce_loss', type=str, required=False)
-
+    
 
     parser.add_argument('--build_faiss_batch_size', help='Batch size when building faiss index ', type=int, required=False)
     parser.add_argument('--search_faiss_batch_size', help='Batch size when searching in faiss ', type=int, required=False)
-    parser.add_argument('--faiss_clustering_samples_size', help='Num of random samples to create faiss clusters', type=int, required=False)
-
-
-
-    parser.add_argument('--save_debug_pkls',  action="store_true")
 
     parser.add_argument('--use_amp',  action="store_true")
+
+
+
 
     args = parser.parse_args()
 
@@ -306,14 +323,24 @@ def train_parse_args():
 
     if args.encoder_model_name:
         cfg.model.model_name = args.encoder_model_name
-    if args.num_workers:
-        cfg.train.num_workers = args.num_workers
+
     if args.num_epochs:
+        assert  8 <= args.num_epochs < 25, f'Num epochs should be between 8 and 25'
         cfg.train.num_epochs = args.num_epochs
     if args.train_batch_size:
         cfg.train.batch_size = args.train_batch_size
     if args.topk:
+        assert args.topk > 5, 'Topk candidates should be at least 5'
         cfg.train.topk = args.topk
+
+    if args.hard_negatives_num:
+        assert args.hard_negatives_num < cfg.train.topk, f'Hard negatives num should be less than topk ({cfg.train.topk})'
+        cfg.train.inject_hard_negatives_candidates = args.hard_negatives_num
+    if args.hard_positives_num:
+        assert args.hard_positives_num < cfg.train.topk, f'Hard positives num should be less than topk ({cfg.train.topk})'
+        cfg.train.inject_hard_positives_candidates = args.hard_positives_num
+    
+
 
     if args.learning_rate:
         cfg.train.learning_rate = args.learning_rate
@@ -326,8 +353,6 @@ def train_parse_args():
         cfg.faiss.build_batch_size = args.build_faiss_batch_size
     if args.search_faiss_batch_size:
         cfg.faiss.search_batch_size = args.search_faiss_batch_size
-    if args.faiss_clustering_samples_size:
-        cfg.faiss.cluster_samples = args.faiss_clustering_samples_size
 
 
     if args.use_amp:

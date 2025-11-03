@@ -98,7 +98,7 @@ class Trainer:
                 4- set the candidates in the dataset instance and inject hard negative and positive candidates if allowed
                 5- compute FAISS recall for k=topk
                 6- make the dataloader from the dataset
-                7- for each batch in the dataloader execute self.train_one_epoch
+                7- for each batch in the dataloader execute self.train_one_batch
                 8- calculate accuracy mrr and loss from the returned values of train_one_batch
                 9- log epoch summary
         """
@@ -255,7 +255,7 @@ class Trainer:
         self.save_checkpoint(epoch='last')
 
         self.logger.log_event("Train finished", t0=full_train_start_time, log_memory=False)
-        self.logger.log_event("Main info: " , message=self.checkpointing.current_entry, log_memory=False)
+        self.logger.log_event("Main info: " , message=self.checkpointing.current_experiment, log_memory=False)
 
 
 LOGGER = logging.getLogger()
