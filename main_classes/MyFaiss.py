@@ -155,8 +155,11 @@ class MyFaiss():
         N = self.tokens_paths.dictionary_shape[0]
         self.dictionary_entries_n  = N
 
+
         if self.faiss_index is None:
             self.init_index(N)
+        else:
+            self.faiss_index.reset()
         assert self.faiss_index is not None
 
 
