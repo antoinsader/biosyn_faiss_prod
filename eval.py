@@ -7,7 +7,10 @@ import numpy as np
 from tqdm import tqdm
 
 from config import GlobalConfig, eval_parse_args
-from main_classes import MyEncoder, MyFaiss, Reranker
+
+from main_classes.MyFaiss import MyFaiss
+from main_classes.MyEncoder import MyEncoder
+from main_classes.Reranker import Reranker 
 from helpers.MyLogger import MyLogger, CheckPointing
 from helpers.Data import MyDataset, TokensPaths
 
