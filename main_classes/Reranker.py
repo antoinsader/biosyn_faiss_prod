@@ -97,19 +97,3 @@ class Reranker(nn.Module):
         return loss
 
 ----------------------------------------------------------------------
-■ EVENT LOG END :: FAISS SEARCH
-======================================================================
-
-Traceback (most recent call last):
-  File "/workspace/biosyn_faiss_prod/train.py", line 270, in <module>
-    trainer.train()
-  File "/workspace/biosyn_faiss_prod/train.py", line 232, in train
-    avergae_loss, average_mrr, average_accuracy_5, last_faiss_recall = self.train_one_epoch(epoch)
-                                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/workspace/biosyn_faiss_prod/train.py", line 136, in train_one_epoch
-    recall_faiss = self.faiss.compute_faiss_recall_at_k(candidates_idxs, k=self.topk)
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/workspace/biosyn_faiss_prod/main_classes/MyFaiss.py", line 225, in compute_faiss_recall_at_k
-    retreived_candidates_cuis = dictionary_cuis[candidates_idxs[i, :k]]
-                                ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
-IndexError: index 8174540 is out of bounds for axis 0 with size 4263543
