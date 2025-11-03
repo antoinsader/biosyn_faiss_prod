@@ -221,9 +221,8 @@ class CheckPointing:
 
         if not self.eval:
             cfg.paths.set_result_encoder_dir(cfg.paths.output_dir + f"/encoder_{self.current_experiment_id}/")
-
-        self.checkpoint_path = cfg.paths.checkpoint_path
-        assert self.checkpoint_path is not None
+            self.checkpoint_path = cfg.paths.checkpoint_path
+            assert self.checkpoint_path is not None
 
     def _get_last_global_experiment(self):
         """
