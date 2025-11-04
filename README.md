@@ -37,22 +37,26 @@ The model was successfully trained with **4m records dictionary**, acheiving the
 
 ## Installation:
 
-If you are on **Linux with a CUDA GPU**, the easiest way to set up everything is by running: 
+### Recommended (Linux + CUDA GPU)
 
 ```bash
     bash install_ds.sh
 ```
 
-This scripts: 
-- Extract dictionary and traindev zip files from /raw/ into ./data/raw/
-- Create python virtual environment
-- Install required libraries
+This script:
+- Extracts dictionary and traindev zip files from `/raw/` into `./data/raw/`
+- Creates a python virtual environment
+- Installs all required dependencies
 
-If you're on another OS or prefer manual setup, create your own python environment or use your own datasets then you have to install dependencies from 'requirements.txt'
+### Manual setup:
 
-But be careful:
-- faiss-gpu-cu12 is the faiss using cuda 12, if you don't have cuda, you can use normal faiss
-- Make sure that inside the folder data/raw, you have traindev/ folder containing .concept files and train_dictionary.txt file
+If you are using another OS or prefer manual setup:
+1. Create python virtual environment
+2. Install dependencies from `requirements.txt`
+
+**Notes:**
+- `faiss-gpu-cu12` is the faiss using CUDA 12. Use standard `faiss` if you have no GPU. or `faiss-gpu` if you have lower GPU.
+- Ensure the folder data/raw contains traindev/ folder  and train_dictionary.txt file before training.
 
 ---
 
@@ -62,26 +66,33 @@ The `tokenizer.py` script:
     - reads the dictionary (`train_dictionary.txt`) and the `traindev/` folder of query concept files
     - Tokenizes dictionary and query using a Hugging Face tokenizer (by default, BioBERT).
     - Save tokens and cuis in the corresponding files
-    - Split the traindev dataset into train and test datasets
+    - Optionally splits traindev into train/test  datasets
 
-You can run the tokenizer using:
+### Usage
 
 ```bash
-    python tokenizer.py
+python tokenizer.py
 ```
 
-Arguments you can specify:
-    --dictionary_path: str, default: './data/raw/train_dictionary.txt',   path to the .txt file of the dictionary
-    --queries_dir: str, default: './data/raw/traindev',  traindev directory containing .concept files
+### Arguments
 
-    --dictionary_max_length: int, default= 120, padding and truncation of the tokenizer for the dictionary depends on this parameter
-    --queries_max_length: int, default= 120, padding and truncation of the tokenizer for the dictionary depends on this parameter
+| Argument | Type | Default | Description |
+|-----------|------|----------|-------------|
+| `--dictionary_path` | str | `./data/raw/train_dictionary.txt` | Path to dictionary file |
+| `--queries_dir` | str | `./data/raw/traindev` | Path to traindev folder |
+| `--dictionary_max_length` | int | 120 | Tokenizer padding/truncation length for dictionary |
+| `--queries_max_length` | int | 120 | Tokenizer padding/truncation length for queries |
+| `--test_split_percentage` | float | 0.8 | Fraction of traindev used for training |
+| `--skip_tokenizing_dictionary` | bool | False | Skip dictionary tokenization |
+| `--skip_tokenizing_queries` | bool | False | Skip query tokenization |
+| `--skip_split` | bool | False | Skip splitting traindev into train/test |
 
-    --test_split_percentage: float, default: 0.8, value between 0.0 and 1.0 to specify percentage split for the training
 
-    --skip_tokenizing_dictionary: bool, default: False, set this flag if you want to skip the tokenization of the dictionary
-    --skip_tokenizing_queries: bool, default: False, set this flag if you want to skip the tokenization of the queries
-    --skip_split: bool, default: False, set this flag if you want to skip the split of traindev into train and test datasets
+**Example:**
+
+```bash
+python tokenizer.py --dictionary_path='./path/to/dictionary.txt' --skip_tokenizing_queries --skip_split
+```
 
 Use case:
     If you want to tokenize only specific dictionary that you have, you can execute
