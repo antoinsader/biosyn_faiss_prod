@@ -1,31 +1,37 @@
-# Concept retreival 
+# BioSyn FAISS retreival system
 
-Deep learning retrieval system for learning the matching between mentions (queries) to dictionary entries using encoders and FAISS vector search.
+Deep learning retrieval system for learning the matching between mentions (queries) and dictionary entries using encoders and FAISS vector search.
 
-This model was used to train  ncbi-dataset
+This model was trained on the NCBI dataset and it is designed to learn semantic matching between biomedical terms.
+
+---
+
+## Overview:
+
+### Data structure:
 
 The training dataset consisting of:
 
-    1- Dictionary file with .txt extension: each line in the dictionary having CUI, Entity Name
-    2- Traindev folder: containing .concept files, each file has lines for mentions with their corresponding CUI
+    1- **Dictionary file (.txt)** - each line conotains a  CUI and its corresponding entity name
+    2- **Traindev folder** - contains `.concept` files, each line representing a mention and its associated CUI
 
-The model learns to relate the mentions in the traindev with the correesponding terms of the train dictionary.
+The model learns to relate the mentions in the traindev set to their correesponding terms in the dictionary.
 
-The model has been trained with 4m records dictionary successfully and gave results:
-    - accuracy@5: 
-    - mrr: 
-    - average_loss: 
+The model was successfully trained with **4m records dictionary**, acheiving the following  results:
+    - topk = 20
+    - accuracy@5: 0.9659
+    - mrr: 0.8903
+    - average_loss: 0.3
 
-The model working in this pipeline:
+### Training pipeline:
 
-    1- Retreive candidates for each query from the dictionary using FAISS
-    2- Forward pass which calculating scores depending on cosine similarity between each query and its candidates
-    3- Fine tune the encoder in order to have a space where terms having same CUIs will be near each other while similar terms with different CUI will be far from each other
+1. Retreive top-k candidates for each query from the dictionary using **FAISS**.
+2. Perform a forward pass to calculate similarity scores (cosine similarity) between each query and its candidates
+3. Fine-tune the encoder so that terms having same CUIs are close in the embedding space, while terms having different CUIs are pushed apart.
 
-
-FAISS index choosing:
-    If dictionary size is bigger than 1m, we chose the GpuIndexIVFPQ index with the help of IndexHNSWFlat quantizer
-    If dictionary size is less than 1m, we chose the GpuIndexFlatIP index or IndexFlatIP depending if cuda is available
+### FAISS index choosing:
+- For dictionaries larger than **1m entries** -> `GpuIndexIVFPQ` index with the  `IndexHNSWFlat` quantizer
+- For smaller dictionaries ->  `GpuIndexFlatIP` index or `IndexFlatIP` depending if cuda is available
 
 ---
 
