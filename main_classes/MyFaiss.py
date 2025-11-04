@@ -182,7 +182,7 @@ class MyFaiss():
             For each query_batch, search top-k candidates from the dictionary
             Return candidates (queries_num , topk)
         """
-
+        assert self.faiss_index is not None, 'FAISS index has to be loaded from path or initialized'
         (tokens_size, max_length ) = self.tokens_paths.queries_shape
         N = tokens_size
         candidates = np.zeros((N,self.topk))

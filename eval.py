@@ -42,13 +42,11 @@ class Evaluator:
         self.encoder = MyEncoder(cfg)
         self.model = Reranker(self.encoder, self.cfg)
         self.faiss = MyFaiss(cfg, save_index_path="",  dataset=self.dataset, tokens_paths=self.tokens_paths, encoder=self.encoder)
-
+        self.faiss.load_faiss_index(cfg.paths.faiss_path)
         self.topk = cfg.train.topk
 
     def eval(self):
         self.model.eval()
-        self.faiss.build_faiss(self.cfg.faiss.build_batch_size)
-
         candidates_idxs = self.faiss.search_faiss(self.cfg.faiss.search_batch_size) # (queries_N, topk)
         candidates_idxs = candidates_idxs.astype(np.int64)
         self.dataset.set_candidates(candidates_idxs)

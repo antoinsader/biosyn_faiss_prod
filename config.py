@@ -275,6 +275,10 @@ def eval_parse_args():
     if args.result_encoder_dir:
         assert os.path.isdir(args.result_encoder_dir)
         cfg.paths.result_encoder_dir = args.result_encoder_dir
+
+        cfg.paths.faiss_path = os.path.join(args.result_encoder_dir, "/faiss_index.faiss")
+        assert os.path.exists(cfg.paths.faiss_path), f'Faiss not found,  {cfg.paths.faiss_path}'
+
     return cfg
 
 def train_parse_args():
