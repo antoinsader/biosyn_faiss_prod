@@ -182,7 +182,7 @@ Each epoch executes the following pipeline:
 
 1. **Warmup/Layer freezing**:
 
-At the start of training, lower transformer layers are frozen, to make early epochs only train the top layers, gradually unfreezing deeper layers as the model stabilizes.
+    - At the start of training, lower transformer layers are frozen, to make early epochs only train the top layers, gradually unfreezing deeper layers as the model stabilizes.
 
 2. **FAISS index building**:
     - Dictionary is embedded using the current encoder, then those embeddings are added into the FAISS index in batches.
@@ -195,32 +195,32 @@ At the start of training, lower transformer layers are frozen, to make early epo
 
 3. **FAISS search**:
 
-- Queries are embedded in batches and added to FAISS index.
-- Each embeding is also normalized.
-- Retreive for each query, topk candidates (which are most similar dictionary entries), the retreived candidates are dictionary indices
-- Then FAISS recall@k is computed, which is the percentage where candidates has been retreived correctly in the first k candidates for each query
+    - Queries are embedded in batches and added to FAISS index.
+    - Each embeding is also normalized.
+    - Retreive for each query, topk candidates (which are most similar dictionary entries), the retreived candidates are dictionary indices
+    - Then FAISS recall@k is computed, which is the percentage where candidates has been retreived correctly in the first k candidates for each query
 
 4. **Dataset candidates injection**:
 
-- Dpending on (hard_positives_num, hard_negatives_num default to 2, 7) The retreived candidates pool would be updated.
-- Injecting hard negative candidates would make the model better distinguish the candidates. We are injecting negative candidates that FAISS search has thought they are correct candidates in the previous epoch.
-- Hard positive candidates will reinforce correct similarity
-- Positions of injected candidates are random and made in a way to not be overlapped to 
+    - Dpending on (hard_positives_num, hard_negatives_num default to 2, 7) The retreived candidates pool would be updated.
+    - Injecting hard negative candidates would make the model better distinguish the candidates. We are injecting negative candidates that FAISS search has thought they are correct candidates in the previous epoch.
+    - Hard positive candidates will reinforce correct similarity
+    - Positions of injected candidates are random and made in a way to not be overlapped to 
 
 5. **Train loop**:
 
-Train loop will do in batches:
-    - Query and candidate tokens are being embedded and normalized
-    - Compute cosine similarity using torch.bmm between the query embeding and its candidates
-    - Calculate loss (marginal_nll or info_nce_loss) and divide it by loss_temperature of the epoch
-    - backward pass and optimization using AdamW optimizer and scheduler
+    - Train loop will do in batches:
+        - Query and candidate tokens are being embedded and normalized
+        - Compute cosine similarity using torch.bmm between the query embeding and its candidates
+        - Calculate loss (marginal_nll or info_nce_loss) and divide it by loss_temperature of the epoch
+        - backward pass and optimization using AdamW optimizer and scheduler
 
 6. **Calculate metrics**:
-- Accuracy@5: for each query, in its first 5 candidates, did the model predicted at least one correct candidate in those 5
-- mrr: Mean Reciprocal Rank. How high up the correct answer appears among the candidates for each query.
+    - Accuracy@5: for each query, in its first 5 candidates, did the model predicted at least one correct candidate in those 5
+    - mrr: Mean Reciprocal Rank. How high up the correct answer appears among the candidates for each query.
 
 7. **Save checkpoint**: 
--  encoder, FAISS index, and metrics logs are saved.
+    -  encoder, FAISS index, and metrics logs are saved.
 
 ---
 
