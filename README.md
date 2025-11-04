@@ -12,8 +12,8 @@ This model was trained on the NCBI dataset and it is designed to learn semantic 
 
 The training dataset consisting of:
 
-    1- **Dictionary file (.txt)** - each line conotains a  CUI and its corresponding entity name
-    2- **Traindev folder** - contains `.concept` files, each line representing a mention and its associated CUI
+1- **Dictionary file (.txt)** - each line conotains a  CUI and its corresponding entity name
+2- **Traindev folder** - contains `.concept` files, each line representing a mention and its associated CUI
 
 The model learns to relate the mentions in the traindev set to their correesponding terms in the dictionary.
 
