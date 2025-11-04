@@ -97,7 +97,7 @@ class MyFaiss():
             self.faiss_index = faiss.IndexFlatIP(self.hidden_size)
 
     def init_index(self, N):
-        if N >= 1_000_000:
+        if N >= 1_000_000 or self.cfg_faiss.force_ivfpq:
             self._create_ivfpq_index(N)
             self.train_samples(N)
         else:

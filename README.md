@@ -142,15 +142,17 @@ If --skip_split was not set, you will have also files for test dataset (test_que
 ---
 ## Minimize:
 
-If your dictionary is too large and you want to reduce it while keeping all CUIs appearing in traindev set, use:
+- If your dictionary is too large and you want to reduce it while keeping all CUIs appearing in traindev set, use:
 
 ```bash
     python minimize.py --minimize_target=50000
 ```
 
-This ensures all required CUIs are included, then pads the dictionary with random entries to reach the target size.
+- This ensures all required CUIs are included, then pads the dictionary with random entries to reach the target size.
 
-When you minimize, to use the small dictionary you have to specify --use_small_dictionary in train.py
+- When you minimize, to use the small dictionary you have to specify --use_small_dictionary in train.py
+
+- Be careful that if you train with the small dictionary, FAISS index would be different. 
 
 ---
 

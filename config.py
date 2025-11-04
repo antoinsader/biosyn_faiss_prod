@@ -150,7 +150,7 @@ class FaissConfig:
     hnsw_efConstruction = 200
     hnsw_efSearch = 512
 
-
+    force_ivfpq = False
 
     def num_clusters(self, dictionary_size):
         #bigger number means faster search and lower accuracy
@@ -316,6 +316,7 @@ def train_parse_args():
     parser.add_argument('--search_faiss_batch_size', help='Batch size when searching in faiss ', type=int, required=False)
 
     parser.add_argument('--use_amp',  action="store_true")
+    parser.add_argument('--force_ivfpq',  action="store_true")
 
 
 
@@ -344,7 +345,6 @@ def train_parse_args():
     if args.hard_positives_num:
         assert args.hard_positives_num < cfg.train.topk, f'Hard positives num should be less than topk ({cfg.train.topk})'
         cfg.train.inject_hard_positives_candidates = args.hard_positives_num
-    
 
 
     if args.learning_rate:
@@ -368,6 +368,9 @@ def train_parse_args():
 
     if args.use_amp:
         cfg.train.use_amp = args.use_amp
+
+    if args.force_ivfpq :
+        cfg.faiss.force_ivfpq = True
 
     return cfg
 
