@@ -23,7 +23,7 @@ from helpers.Data import MyDataset, TokensPaths
 
 class Evaluator:
     def __init__(self, logger: MyLogger, cfg: GlobalConfig):
-        self.logger : MyLogger = logger,
+        self.logger : MyLogger = logger
         self.cfg :GlobalConfig = cfg
 
         
