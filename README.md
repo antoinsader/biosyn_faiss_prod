@@ -4,7 +4,33 @@ Deep learning retrieval system for learning the matching between mentions (queri
 
 This model was trained on the NCBI dataset and it is designed to learn semantic matching between biomedical terms.
 
+
 ---
+
+## Table of Contents
+
+1. [Overview](#overview)
+   - [Data structure](#data-structure)
+   - [Training pipeline](#training-pipeline)
+   - [FAISS index choosing](#faiss-index-choosing)
+2. [Installation](#installation)
+   - [Recommended (Linux + CUDA GPU)](#recommended-linux--cuda-gpu)
+   - [Manual setup](#manual-setup)
+3. [Tokenize](#tokenize)
+   - [Usage](#usage)
+   - [Arguments](#arguments)
+4. [Minimize](#minimize)
+5. [Train](#train)
+   - [Arguments](#arguments-1)
+   - [Inside trainpy](#what-is-happening-inside-trainpy)
+6. [Evaluation](#evaluation)
+7. [Notes](#notes)
+8. [Author](#author)
+
+
+---
+
+
 
 ## Overview:
 
