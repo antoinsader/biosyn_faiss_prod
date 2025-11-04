@@ -31,8 +31,10 @@ class Trainer:
         self.use_cuda = torch.cuda.is_available()
         self.device = "cuda"    if self.use_cuda else "cpu"
 
-
-        self.tokens_paths = TokensPaths(cfg, dictionary_key="dictionary", queries_key='train_queries')
+        dictionary_key='dictionary'
+        if cfg.train.use_small_dictionary:
+            dictionary_key = 'small_dictionary'
+        self.tokens_paths = TokensPaths(cfg, dictionary_key=dictionary_key, queries_key='train_queries')
         self.encoder = MyEncoder(cfg)
         self.model = Reranker(self.encoder, self.cfg)
         self.dataset = MyDataset(self.tokens_paths, cfg)

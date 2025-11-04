@@ -129,6 +129,7 @@ class TrainingConfig:
     loss_temperature: float = 0.2 # if small dict 0.07
     save_checkpoints:bool = True
     load_last_checkpoint:bool = True
+    use_small_dictionary: bool = False
 
     inject_hard_negatives_candidates:bool= True
     hard_negatives_num:int= 7
@@ -297,7 +298,7 @@ def train_parse_args():
     parser.add_argument('--encoder_model_name',
                         help='Directory for pretrained model', required=False)
     
-
+    parser.add_argument('--use_small_dictionary', help='In case you minimized and want to use the small dictionar', action='store_true')
     parser.add_argument('--num_epochs', help='train num epochs', type=int, required=False)
     parser.add_argument('--train_batch_size', help='train batch size', type=int, required=False)
     parser.add_argument('--topk', help='train topk candidates', type=int, required=False)
@@ -357,6 +358,12 @@ def train_parse_args():
         cfg.faiss.build_batch_size = args.build_faiss_batch_size
     if args.search_faiss_batch_size:
         cfg.faiss.search_batch_size = args.search_faiss_batch_size
+
+    if args.use_small_dictionary:
+        cuis = cfg.paths.get_default_token_groups()['small_dictionary']['cuis']
+        inp_ids = cfg.paths.get_default_token_groups()['small_dictionary']['input_ids']
+        assert os.path.exists(cuis) and os.path.exists(inp_ids), f"Mini dictionary was not created, make sure to execute minimize.py"
+        cfg.train.use_small_dictionary = True
 
 
     if args.use_amp:
