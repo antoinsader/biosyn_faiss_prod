@@ -413,7 +413,7 @@ def load_dictionary(dictionary_path, special_token_start="[MS]" , special_token_
             line = line.strip()
             if line == "": continue
             cui, name = line.split("||")
-            name = special_token_start + " "  + name + " " + special_token_end
-            data.append((name.strip(),cui))
+            name_annotated = special_token_start + " "  + name + " " + special_token_end
+            data.append((name,cui, name_annotated.strip()))
     data = np.array(data)
     return data

@@ -177,10 +177,11 @@ if __name__=="__main__":
     mention_start_token_id  = tokenizer.convert_tokens_to_ids(cfg.tokenize.special_tokens_dict["mention_start"])
     mention_end_token_id  = tokenizer.convert_tokens_to_ids(cfg.tokenize.special_tokens_dict["mention_end"])
 
-    meta = {"len_tokenizer": len(tokenizer), 
-            "mention_start_token_id": mention_start_token_id,
-            "mention_end_token_id": mention_end_token_id
-        }
+    meta = {
+        "len_tokenizer": len(tokenizer), 
+        "mention_start_token_id": mention_start_token_id,
+        "mention_end_token_id": mention_end_token_id
+    }
     with open(cfg.paths.tokenizer_meta_path, "w") as f:
         json.dump(meta, f)
 
@@ -198,7 +199,7 @@ if __name__=="__main__":
         queries_sentences = [q[2] for q in train_queries]
         np.save(tokens_paths.queries_cuis_path, queries_cuis)
 
-        tokenize_names(queries_names, 
+        tokenize_names(queries_sentences, 
                        tokens_paths.queries_input_ids_path, 
                        tokens_paths.queries_attention_mask_path, 
                        max_length=queries_max_length)
@@ -215,10 +216,11 @@ if __name__=="__main__":
                                      special_token_start=mention_start_special_token, 
                                      special_token_end=mention_end_special_token)
         dictionary_cuis = [q[1] for q in dictionary]
-        dictionary_names = [q[0] for q in dictionary]
+        # dictionary_names = [q[0] for q in dictionary]
+        dictionary_names_annotated = [q[2] for q in dictionary]
         np.save(tokens_paths.dictionary_cuis_path, dictionary_cuis)
 
-        tokenize_names(dictionary_names, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length)
+        tokenize_names(dictionary_names_annotated, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length)
         meta = {"shape": (len(dictionary_cuis), dictionary_max_length)}
         with open(tokens_paths.dictionary_meta  , "w") as f:
             json.dump(meta, f)
