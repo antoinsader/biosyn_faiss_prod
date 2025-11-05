@@ -174,8 +174,13 @@ if __name__=="__main__":
     tokenizer = AutoTokenizer.from_pretrained(cfg.model.model_name, use_fast=True)
     tokenizer.add_special_tokens(cfg.tokenize.special_tokens)
 
+    mention_start_token_id  = tokenizer.convert_tokens_to_ids(cfg.tokenize.special_tokens_dict["mention_start"])
+    mention_end_token_id  = tokenizer.convert_tokens_to_ids(cfg.tokenize.special_tokens_dict["mention_end"])
 
-    meta = {"len_tokenizer": len(tokenizer)}
+    meta = {"len_tokenizer": len(tokenizer), 
+            "mention_start_token_id": mention_start_token_id,
+            "mention_end_token_id": mention_end_token_id
+        }
     with open(cfg.paths.tokenizer_meta_path, "w") as f:
         json.dump(meta, f)
 

@@ -32,6 +32,8 @@ class MyEncoder():
         tokenizer_len = tokenizer_meta['len_tokenizer']
         encoder.resize_token_embeddings(tokenizer_len)
 
+        self.mention_start_token_id = tokenizer_meta["mention_start_token_id"]
+        self.mention_end_token_id = tokenizer_meta["mention_end_token_id"]
 
         self.encoder = encoder.to(self.device)
         self.cfg.hidden_size = self.encoder.config.hidden_size
@@ -53,20 +55,27 @@ class MyEncoder():
             # Hidden state, (batch, seq_len, hidden)
             emb = self.encoder(input_ids=input_ids_tensor, attention_mask=attention_mask_tensor)[0]
 
-        # mean pooling
-        mask = attention_mask_tensor.unsqueeze(-1).float()
-        mean_emb = (emb * mask).sum(1) / mask.sum(1).clamp_min(1e-6)
-        cls_emb = emb[:, 0]
 
-        if self.cfg.pooling == 'mean':
-            ret = mean_emb
-        if self.cfg.pooling == 'cls':
-            ret = cls_emb
-        else:
-            ret = 0.5 * (mean_emb + cls_emb)
+        batch_size, seq_len, hidden_size = emb.size()
+        embs = torch.zeros((batch_size, hidden_size), device=self.device)
+        for i in range(batch_size):
+            input_ids = input_ids_tensor[i]
+
+            mention_start_positions = (input_ids == self.mention_start_token_id).nonzero(as_tuple=True)[0]
+            mention_end_positions = (input_ids == self.mention_end_token_id).nonzero(as_tuple=True)[0]
+
+            assert len(mention_start_positions) > 0 and len(mention_end_positions) > 0, f"No markers found"
+            mention_start_idx = mention_start_positions[0].item()
+            mention_end_idx = mention_end_positions[0].item()
+
+            assert mention_end_idx > mention_start_idx + 1, f"Malformed span !!"
+            span_emb = emb[i, mention_start_idx + 1: mention_end_idx] # (span len, hidden)
+            embs[i] = span_emb.mean(dim=1) 
+
+
 
         if self.cfg.normalize:
-            ret = F.normalize(ret , p=2, dim=1)
+            ret = F.normalize(embs , p=2, dim=1)
 
         return ret
 
