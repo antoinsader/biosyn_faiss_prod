@@ -65,8 +65,18 @@ class PathsConfig:
 
 @dataclass
 class TokensConfig:
-    dictionary_max_length = 120
-    queries_max_length = 120
+
+
+    # This number represents how many tokens to show in the annotated query (sentence with the mention marked)
+    # I saw that in my traindev_lg, if I did 40, then 97 of the sentences length would be under the length of 279 which is relatively good 
+    queries_annotated_total_window_tokens = 40
+    queries_annotated_max_length = 279
+
+
+    queries_max_length = 48
+    dictionary_max_length = 48
+
+
     tokenize_batch_size : int = 128_000
     raw_test_dir:str = None
 
@@ -140,9 +150,9 @@ class TrainingConfig:
     use_small_dictionary: bool = False
 
     inject_hard_negatives_candidates:bool= True
-    hard_negatives_num:int= 7
+    hard_negatives_num:int= 9
     inject_hard_positives_candidates:bool= True
-    hard_positives_num:int= 2
+    hard_positives_num:int= 1
 
     freeze_lower_layer_epoch_max:int=2
 
@@ -217,8 +227,6 @@ def tokenizer_parse_args():
     parser.add_argument('--dictionary_path',  type=str)
     parser.add_argument('--queries_dir',  type=str)
 
-    parser.add_argument('--dictionary_max_length',  type=int)
-    parser.add_argument('--queries_max_length',  type=int)
     parser.add_argument('--test_split_percentage',  type=float)
 
     parser.add_argument('--skip_tokenizing_dictionary',  action="store_true")
@@ -242,12 +250,6 @@ def tokenizer_parse_args():
     if args.queries_dir:
         assert os.path.isdir(args.queries_dir), f'Queries dir: {args.queries_dir} not exists'
         cfg.paths.queries_raw_dir = args.queries_dir
-
-    if args.queries_max_length:
-        cfg.tokenize.queries_max_length = args.queries_max_length
-
-    if args.dictionary_max_length:
-        cfg.tokenize.dictionary_max_length = args.dictionary_max_length
 
     if args.test_split_percentage:
         assert 0.0 <= args.test_split_percentage <= 1.0 

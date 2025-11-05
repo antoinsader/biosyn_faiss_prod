@@ -107,8 +107,6 @@ python tokenizer.py
 |-----------|------|----------|-------------|
 | `--dictionary_path` | str | `./data/raw/train_dictionary.txt` | Path to dictionary file |
 | `--queries_dir` | str | `./data/raw/traindev` | Path to traindev folder |
-| `--dictionary_max_length` | int | 120 | Tokenizer padding/truncation length for dictionary |
-| `--queries_max_length` | int | 120 | Tokenizer padding/truncation length for queries |
 | `--test_split_percentage` | float | 0.8 | Fraction of traindev used for training |
 | `--skip_tokenizing_dictionary` | bool | False | Skip dictionary tokenization |
 | `--skip_tokenizing_queries` | bool | False | Skip query tokenization |

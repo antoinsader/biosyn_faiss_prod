@@ -56,6 +56,8 @@ def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, ma
     input_ids_mmap.flush()
     att_mask_mmap.flush()
 
+
+
 def split_queries(cfg: GlobalConfig, train_queries_key='train_queries', test_queries_key='test_queries'):
     token_groups =  cfg.paths.get_default_token_groups()
     train_queries_paths = token_groups[train_queries_key]
@@ -161,6 +163,11 @@ if __name__=="__main__":
     cfg = tokenizer_parse_args()
     dictionary_max_length = cfg.tokenize.dictionary_max_length
     queries_max_length = cfg.tokenize.queries_max_length
+    queries_annotated_total_window_tokens = cfg.tokenize.queries_annotated_total_window_tokens
+    queries_annotated_max_length = cfg.tokenize.queries_annotated_max_length
+    mention_start_special_token = cfg.tokenize.special_tokens_dict["mention_start"]
+    mention_end_special_token = cfg.tokenize.special_tokens_dict["mention_end"]
+
 
     tokens_paths  = TokensPaths(cfg, dictionary_key='dictionary', queries_key='train_queries')
 
@@ -176,12 +183,20 @@ if __name__=="__main__":
 
     if not cfg.tokenize.skip_tokenize_queries:
         print(f"Reading queries...")
-        train_queries = load_queries(cfg.paths.queries_raw_dir)
-        queries_cuis = [q[1] for q in train_queries]
+        train_queries = load_queries(cfg.paths.queries_raw_dir, 
+                                     special_token_start=mention_start_special_token, 
+                                     special_token_end=mention_end_special_token, 
+                                     total_window_tokens=queries_annotated_total_window_tokens
+                                     )
         queries_names = [q[0] for q in train_queries]
+        queries_cuis = [q[1] for q in train_queries]
+        queries_sentences = [q[2] for q in train_queries]
         np.save(tokens_paths.queries_cuis_path, queries_cuis)
 
-        tokenize_names(queries_names, tokens_paths.queries_input_ids_path, tokens_paths.queries_attention_mask_path, max_length=queries_max_length)
+        tokenize_names(queries_names, 
+                       tokens_paths.queries_input_ids_path, 
+                       tokens_paths.queries_attention_mask_path, 
+                       max_length=queries_max_length)
 
         meta = {"shape": (len(queries_cuis), queries_max_length)}
         with open(tokens_paths.queries_meta  , "w") as f:
@@ -191,7 +206,9 @@ if __name__=="__main__":
 
     if not cfg.tokenize.skip_tokenize_dictionary:
         print(f"Reading dictionary...")
-        dictionary = load_dictionary(cfg.paths.dictionary_raw_path)
+        dictionary = load_dictionary(cfg.paths.dictionary_raw_path, 
+                                     special_token_start=mention_start_special_token, 
+                                     special_token_end=mention_end_special_token)
         dictionary_cuis = [q[1] for q in dictionary]
         dictionary_names = [q[0] for q in dictionary]
         np.save(tokens_paths.dictionary_cuis_path, dictionary_cuis)

@@ -205,6 +205,11 @@ class MyDataset(Dataset):
         for query_idx in range(num_queries):
             query_cui = self.queries_cuis[query_idx]
             current_query_candidates_idxs = new_cands[query_idx].tolist()
+            
+            current_candidates_cuis = self.dictionary_cuis[current_query_candidates_idxs]
+            positive_positions = np.where(current_candidates_cuis == query_cui)[0]
+            candidates_idxs_available = list(set(range(self.topk))  - set(positive_positions)  )
+
 
             candidates_idxs_to_be_replaced = np.array([])
             if self.inject_hard_positives_candidates:
@@ -219,10 +224,11 @@ class MyDataset(Dataset):
                         #  random positive candidates, to choose from available positives (index of dictionary_cui)
                         positive_candidates = np.random.choice(available_positives, size=positive_n, replace=False)
                         # random indexes in candidate list to be replaced
-                        candidates_idxs_to_be_replaced = np.random.choice(self.topk , size=positive_n, replace=False)
+                        candidates_idxs_to_be_replaced = np.random.choice(candidates_idxs_available , size=positive_n, replace=False)
                         new_cands[query_idx, candidates_idxs_to_be_replaced] = torch.from_numpy(positive_candidates)
 
 
+            candidates_idxs_available = list(set(candidates_idxs_available) - set(candidates_idxs_to_be_replaced))
             inj_hard_negatives = (self.previous_epoch_candidates is not None) and self.inject_hard_negatives_candidates
             if inj_hard_negatives:
                 # choose negatives from last epoch candidates because the faiss search thought they are similar (because their cosine difference is less) 
@@ -238,16 +244,62 @@ class MyDataset(Dataset):
                     negatives_n = min(self.hard_negatives_num, len(hard_negative_indexes))
                     hard_negative_candidates = np.random.choice(hard_negative_indexes, size=negatives_n, replace=False)
                     # candidates_to_replace_positive
-                    candidates_available_idxs = list(set(range(self.topk)) - set(candidates_idxs_to_be_replaced )  )
-                    candidates_idxs_to_be_replaced = np.random.choice(candidates_available_idxs, size=negatives_n, replace=False)
-
+                    candidates_idxs_to_be_replaced = np.random.choice(candidates_idxs_available, size=negatives_n, replace=False)
                     new_cands[query_idx, candidates_idxs_to_be_replaced] = torch.from_numpy(hard_negative_candidates)
+
+        return new_cands
+
+
+    def change_candidates_pool_opt(self):
+        assert self.all_candidates_idxs is not None, "Candidates are not set"
+
+        if self.previous_epoch_candidates is None:
+            return self.all_candidates_idxs
+
+        num_queries, topk = self.all_candidates_idxs.shape
+        new_cands = self.all_candidates_idxs.clone()
+        dict_cuis = self.dictionary_cuis
+        queries_cuis = self.queries_cuis
+
+        for query_idx in range(num_queries):
+            query_cui = queries_cuis[query_idx]
+            current_idxs = new_cands[query_idx].numpy()
+            current_cuis = dict_cuis[current_idxs]
+
+            negative_mask = (current_cuis == query_cui)
+            available_positions = np.flatnonzero(negative_mask)
+
+            # Inject hard positives
+            if self.inject_hard_positives_candidates:
+                pos_dict_idxs = self.dictionary_cui_to_idx.get(query_cui, [])
+                if len(pos_dict_idxs) > 0:
+                    available_pos_dict = np.setdiff1d(pos_dict_idxs, current_idxs, assume_unique=False)
+                    if len(available_pos_dict) > 0 and len(available_positions) > 0:
+                        pos_n = min(self.hard_positives_num,
+                                    len(available_pos_dict),
+                                    len(available_positions))
+                        chosen_pos_dict = np.random.choice(available_pos_dict, size=pos_n, replace=False)
+                        chosen_slots = np.random.choice(available_positions, size=pos_n, replace=False)
+                        new_cands[query_idx, chosen_slots] = torch.from_numpy(chosen_pos_dict)
+                        available_positions = np.setdiff1d(available_positions, chosen_slots, assume_unique=False)
+
+            if self.inject_hard_negatives_candidates and self.previous_epoch_candidates is not None:
+                prev_idxs = np.array(self.previous_epoch_candidates[query_idx])
+                prev_cuis = dict_cuis[prev_idxs]
+                neg_candidates = prev_idxs[prev_cuis != query_cui]
+                if len(neg_candidates) > 0 and len(available_positions) > 0:
+                    neg_n = min(self.hard_negatives_num,
+                                len(neg_candidates),
+                                len(available_positions))
+                    chosen_neg_dict = np.random.choice(neg_candidates, size=neg_n, replace=False)
+                    chosen_slots = np.random.choice(available_positions, size=neg_n, replace=False)
+                    new_cands[query_idx, chosen_slots] = torch.from_numpy(chosen_neg_dict)
 
         return new_cands
 
     def set_candidates(self,cands):
         self.all_candidates_idxs = torch.as_tensor(cands, dtype=torch.long)
-        new_cands = self.change_candidates_pool()
+        new_cands = self.change_candidates_pool_opt()
         self.previous_epoch_candidates = self.all_candidates_idxs.clone()
         self.all_candidates_idxs = new_cands
 
@@ -258,7 +310,7 @@ class MyDataset(Dataset):
 #       LOADING DATA
 # ======================================
 
-def get_annotated_query(s, mention_start, mention_end, mention, special_token_start, special_token_end,total_window_tokens=60):
+def get_annotated_query(s, mention_start, mention_end, mention, special_token_start, special_token_end,total_window_tokens=40):
     """
         args:
             s: full sentence containing the mention 
@@ -353,7 +405,7 @@ def load_queries(data_dir, special_token_start="[MS]" , special_token_end="[ME]"
     data = np.array(data)
     return data
 
-def load_dictionary(dictionary_path):
+def load_dictionary(dictionary_path, special_token_start="[MS]" , special_token_end="[ME]"):
     data = []
     with open(dictionary_path, mode='r', encoding='utf-8') as f:
         lines = f.readlines()
@@ -361,6 +413,7 @@ def load_dictionary(dictionary_path):
             line = line.strip()
             if line == "": continue
             cui, name = line.split("||")
-            data.append((name,cui))
+            name = special_token_start + " "  + name + " " + special_token_end
+            data.append((name.strip(),cui))
     data = np.array(data)
     return data
