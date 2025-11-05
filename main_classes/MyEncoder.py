@@ -44,10 +44,7 @@ class MyEncoder():
             use_amp if set to true the encoder will embed with fp16 (faster if available)
             use_no_grad if True, torch will save the gradient graph (only use in training forward pass, otherwise set to False)
         
-            cfg.pooling if set to 'mean', the result would be the mean pooling of the embeding
-                        if set to 'cls', the result would be only the embeding of [cls]
-                        otherwise we will do the mean of [cls] + embeding of mean
-            cfg.normalize would normalize the result.
+          cfg.normalize would normalize the result.
                 It is better to normalize all embedings so that the inner product became cosine similarity
         """
         context = torch.inference_mode() if use_no_grad else torch.enable_grad()
@@ -70,7 +67,7 @@ class MyEncoder():
 
             assert mention_end_idx > mention_start_idx + 1, f"Malformed span !!"
             span_emb = emb[i, mention_start_idx + 1: mention_end_idx] # (span len, hidden)
-            embs[i] = span_emb.mean(dim=1) 
+            embs[i] = span_emb.mean(dim=0)
 
 
 
