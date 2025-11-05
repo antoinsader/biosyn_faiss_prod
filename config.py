@@ -76,27 +76,35 @@ class TokensConfig:
     test_split_percentage: float = 0.8
 
 
-    query_tokens_window_words_in_text = 10 #5 words before mention start, 5 words after mention start
 
-    special_tokens = {
-        'additional_special_tokens': [
-            '[MENTION_CONTEXT_START]', '[MENTION_CONTEXT_END]',  # existing
-            '[MENTION_NAME_START]', '[MENTION_NAME_END]',
-            '[CONTEXT_START]', '[CONTEXT_END]',
-            '[TYPE_START]', '[TYPE_END]'
-        ]
-    }
+
+    query_tokens_window_words_in_text = 10 #5 words before mention start, 5 words after mention start
+    special_tokens = {"additional_special_tokens": ["[MS]", "[ME]"]}
     special_tokens_dict = {
-        "mention_name_start": "[MENTION_NAME_START]",
-        "mention_name_end": "[MENTION_NAME_END]",
-        "mention_in_sentence_start": "[MENTION_CONTEXT_START]",
-        "mention_in_sentence_end": "[MENTION_CONTEXT_END]",
-        "context_start": "[CONTEXT_START]",
-        "context_end": "[CONTEXT_END]",
-        "type_start": "[TYPE_START]",
-        "type_end": "[TYPE_END]",
-        
+        "mention_start": "[MS]",
+        "mention_end": "[ME]",
     }
+
+
+    # special_tokens = {
+    #     'additional_special_tokens': [
+    #         '[MENTION_CONTEXT_START]', '[MENTION_CONTEXT_END]',  # existing
+    #         '[MENTION_NAME_START]', '[MENTION_NAME_END]',
+    #         '[CONTEXT_START]', '[CONTEXT_END]',
+    #         '[TYPE_START]', '[TYPE_END]'
+    #     ]
+    # }
+    # special_tokens_dict = {
+    #     "mention_name_start": "[MENTION_NAME_START]",
+    #     "mention_name_end": "[MENTION_NAME_END]",
+    #     "mention_in_sentence_start": "[MENTION_CONTEXT_START]",
+    #     "mention_in_sentence_end": "[MENTION_CONTEXT_END]",
+    #     "context_start": "[CONTEXT_START]",
+    #     "context_end": "[CONTEXT_END]",
+    #     "type_start": "[TYPE_START]",
+    #     "type_end": "[TYPE_END]",
+        
+    # }
 
 
 

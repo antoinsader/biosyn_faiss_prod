@@ -165,6 +165,8 @@ if __name__=="__main__":
     tokens_paths  = TokensPaths(cfg, dictionary_key='dictionary', queries_key='train_queries')
 
     tokenizer = AutoTokenizer.from_pretrained(cfg.model.model_name, use_fast=True)
+    tokenizer.add_special_tokens(cfg.tokenize.special_tokens)
+
 
     meta = {"len_tokenizer": len(tokenizer)}
     with open(cfg.paths.tokenizer_meta_path, "w") as f:
