@@ -73,7 +73,7 @@ class TokensConfig:
     queries_annotated_max_length = 279
 
 
-    queries_max_length = 48
+    queries_max_length = 75
     dictionary_max_length = 48
 
 

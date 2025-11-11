@@ -44,7 +44,7 @@ if __name__ == '__main__':
         json.dump(meta, f)
 
     train_queries = load_queries(cfg.paths.queries_raw_dir, 
-                                     queries_max_length=queries_annotated_max_length,
+                                        queries_max_length=queries_max_length,
                     special_token_start=mention_start_special_token, 
                     special_token_end=mention_end_special_token, 
                     )

@@ -375,7 +375,7 @@ def get_annotated_query(s, mention_start, mention_end, mention, special_token_st
 
     return annotated
 
-def load_queries(data_dir, queries_max_length, special_token_start="[MS]" , special_token_end="[ME]", total_window_tokens=50, filter_composite=True, filter_cuiless=True,filter_duplicate=True):
+def load_queries(data_dir, queries_max_length, special_token_start="[MS]" , special_token_end="[ME]",  filter_composite=True, filter_cuiless=True,filter_duplicate=True):
     data = []
     concept_files = glob.glob(os.path.join(data_dir, "*.concept"))
     for concept_file in tqdm(concept_files):
@@ -412,8 +412,7 @@ def load_queries(data_dir, queries_max_length, special_token_start="[MS]" , spec
                                             mention, 
                                             special_token_start, 
                                             special_token_end,
-                                            tokens_max_length=queries_max_length,
-                                            total_window_tokens=total_window_tokens)
+                                            tokens_max_length=queries_max_length)
             data.append((mention, cui, annotated, txt_path, mention_start_idx, mention_end_idx))
     if filter_duplicate:
         data = list(dict.fromkeys(data))
