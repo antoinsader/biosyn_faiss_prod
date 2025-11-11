@@ -419,7 +419,7 @@ def load_queries(data_dir, queries_max_length, special_token_start="[MS]" , spec
     data = np.array(data)
     return data
 
-def load_dictionary(dictionary_path, special_token_start="[MS]" , special_token_end="[ME]"):
+def load_dictionary(dictionary_path, dictionary_max_chars_length, special_token_start="[MS]" , special_token_end="[ME]"):
     data = []
     with open(dictionary_path, mode='r', encoding='utf-8') as f:
         lines = f.readlines()
@@ -427,6 +427,7 @@ def load_dictionary(dictionary_path, special_token_start="[MS]" , special_token_
             line = line.strip()
             if line == "": continue
             cui, name = line.split("||")
+            if len(name) > dictionary_max_chars_length: continue
             name_annotated = special_token_start + " "  + name + " " + special_token_end
             data.append((name,cui, name_annotated.strip()))
     data = np.array(data)

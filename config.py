@@ -69,7 +69,7 @@ class TokensConfig:
 
     queries_max_length = 75
     dictionary_max_length = 48
-
+    dictionary_max_chars_length = 128 #if less would be skipped
 
     tokenize_batch_size : int = 128_000
     raw_test_dir:str = None

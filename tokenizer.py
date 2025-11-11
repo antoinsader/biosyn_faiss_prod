@@ -162,6 +162,7 @@ if __name__=="__main__":
     cfg = tokenizer_parse_args()
     tokenize_batch_size = cfg.tokenize.tokenize_batch_size
     dictionary_max_length = cfg.tokenize.dictionary_max_length
+    dictionary_max_chars_length = cfg.tokenize.dictionary_max_chars_length
     queries_max_length = cfg.tokenize.queries_max_length
     mention_start_special_token = cfg.tokenize.special_tokens_dict["mention_start"]
     mention_end_special_token = cfg.tokenize.special_tokens_dict["mention_end"]
@@ -213,7 +214,10 @@ if __name__=="__main__":
         print(f"Reading dictionary...")
         dictionary = load_dictionary(cfg.paths.dictionary_raw_path, 
                                      special_token_start=mention_start_special_token, 
-                                     special_token_end=mention_end_special_token)
+                                     special_token_end=mention_end_special_token,
+                                    dictionary_max_chars_length=dictionary_max_chars_length,
+                                     
+                                     )
         dictionary_cuis = [q[1] for q in dictionary]
         # dictionary_names = [q[0] for q in dictionary]
         dictionary_names_annotated = [q[2] for q in dictionary]
@@ -224,6 +228,11 @@ if __name__=="__main__":
         meta = {"shape": (len(dictionary_cuis), dictionary_max_length)}
         with open(tokens_paths.dictionary_meta  , "w") as f:
             json.dump(meta, f)
+
+    if queries_cuis is not None and dictionary_cuis is not None:
+        d = set(dictionary_cuis)
+        for q in queries_cuis:
+            assert q in d, f"query cui {q} is not in the dictionary cuis"
 
 
     if not cfg.tokenize.skip_split:

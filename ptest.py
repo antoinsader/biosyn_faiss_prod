@@ -19,6 +19,8 @@ if __name__ == '__main__':
     tokenize_batch_size = cfg.tokenize.tokenize_batch_size
     dictionary_max_length = cfg.tokenize.dictionary_max_length
     queries_max_length = cfg.tokenize.queries_max_length
+    dictionary_max_chars_length = cfg.tokenize.dictionary_max_chars_length
+    
     mention_start_special_token = cfg.tokenize.special_tokens_dict["mention_start"]
     mention_end_special_token = cfg.tokenize.special_tokens_dict["mention_end"]
 
@@ -66,7 +68,9 @@ if __name__ == '__main__':
 
     dictionary = load_dictionary(cfg.paths.dictionary_raw_path, 
                                     special_token_start=mention_start_special_token, 
-                                    special_token_end=mention_end_special_token)
+                                    special_token_end=mention_end_special_token,
+                                    dictionary_max_chars_length=dictionary_max_chars_length,
+                                    )
     dictionary = dictionary[:10]
     dictionary_cuis = [q[1] for q in dictionary]
     # dictionary_names = [q[0] for q in dictionary]
