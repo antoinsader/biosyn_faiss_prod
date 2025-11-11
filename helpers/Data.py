@@ -310,13 +310,12 @@ class MyDataset(Dataset):
 #       LOADING DATA
 # ======================================
 
-def get_annotated_query(s, mention_start, mention_end, mention, special_token_start, special_token_end,total_window_tokens=40):
+def get_annotated_query(s, mention_start, mention_end, mention, special_token_start, special_token_end, tokens_max_length,total_window_tokens=40):
     """
         args:
             s: full sentence containing the mention 
             mention_start, mention_end: char index of sentence where the mention starts and ends
             mention: the mention tokens
-            total_window_tokens: how many tokens the annotated sentence would be
         returns:
             LEFT PART [MS] MENTION [ME] RIGHT PART
     """
@@ -330,12 +329,17 @@ def get_annotated_query(s, mention_start, mention_end, mention, special_token_st
     right_end = right_dot_pos + 1 if right_dot_pos > -1 else len(s)
     right_part = s[mention_end + 1: right_end]
 
+
     s_trunc = left_part.strip() + " " + mention.strip() + " " + right_part.strip()
-    mention_start_new = len(left_part.strip()) + 1
-    mention_end_new = len(left_part.strip())  + len(mention.strip()) + 1
-    
 
     tokens = re.findall(r"\w+|[^\w\s]", s_trunc)
+    mention_tokens = re.findall(r"\w+|[^\w\s]", mention.strip())
+    
+
+    mention_start_new = len(left_part.strip()) + 1
+    mention_end_new = len(left_part.strip()) + len(mention.strip()) + 1
+
+
     tokens_offsets = []
     cursor = 0
     for t in tokens:
@@ -347,21 +351,31 @@ def get_annotated_query(s, mention_start, mention_end, mention, special_token_st
     mention_token_start = next(i for i, (a, b) in enumerate(tokens_offsets) if a <= mention_start_new < b)
     mention_token_end = next(i for i, (a, b) in enumerate(tokens_offsets) if b >= mention_end_new) + 1
 
+    pad_tokens_size = tokens_max_length  - len(mention_tokens) - 4
+    max_left = int(pad_tokens_size * 0.70)
+    max_right = pad_tokens_size - max_left
 
-    max_left = int(total_window_tokens * 0.70)
-    tokens_left = tokens[:mention_token_start ][:max_left]
+    # tokens_left = tokens[:mention_token_start ][:max_left]
+    tokens_left = tokens[max(0, mention_token_start - max_left): mention_token_start]
+    
+    # tokens_right = tokens[mention_token_end : ][:total_window_tokens - (len(tokens_left) + (mention_token_end - mention_token_start))]
+    tokens_right = tokens[mention_token_end: mention_token_end + max_right]
 
-    tokens_right = tokens[mention_token_end : ][:total_window_tokens - (len(tokens_left) + (mention_token_end - mention_token_start))]
-    annotated = " ".join(tokens_left).strip() + " "  + special_token_start +  " " + mention + " " + special_token_end + " " + " ".join(tokens_right).strip()
 
-
-
+    annotated = (
+            " ".join(tokens_left).strip()
+            + f" {special_token_start} "
+            + mention.strip()
+            + f" {special_token_end} "
+            + " ".join(tokens_right).strip()
+        )
 
     annotated = re.sub(r'\s+', ' ', annotated).strip()
 
+
     return annotated
 
-def load_queries(data_dir, special_token_start="[MS]" , special_token_end="[ME]", total_window_tokens=50, filter_composite=True, filter_cuiless=True,filter_duplicate=True):
+def load_queries(data_dir, queries_max_length, special_token_start="[MS]" , special_token_end="[ME]", total_window_tokens=50, filter_composite=True, filter_cuiless=True,filter_duplicate=True):
     data = []
     concept_files = glob.glob(os.path.join(data_dir, "*.concept"))
     for concept_file in tqdm(concept_files):
@@ -398,6 +412,7 @@ def load_queries(data_dir, special_token_start="[MS]" , special_token_end="[ME]"
                                             mention, 
                                             special_token_start, 
                                             special_token_end,
+                                            tokens_max_length=queries_max_length,
                                             total_window_tokens=total_window_tokens)
             data.append((mention, cui, annotated, txt_path, mention_start_idx, mention_end_idx))
     if filter_duplicate:
