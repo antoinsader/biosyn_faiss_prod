@@ -47,6 +47,12 @@ class MyEncoder():
           cfg.normalize would normalize the result.
                 It is better to normalize all embedings so that the inner product became cosine similarity
         """
+
+        if not torch.is_tensor(input_ids_tensor):
+            input_ids_tensor = torch.as_tensor(input_ids_tensor, device = self.device)
+
+        
+
         context = torch.inference_mode() if use_no_grad else torch.enable_grad()
         with context, torch.amp.autocast(device_type="cuda", enabled=(self.use_cuda and use_amp)):
             # Hidden state, (batch, seq_len, hidden)
@@ -58,8 +64,8 @@ class MyEncoder():
         for i in range(batch_size):
             input_ids = input_ids_tensor[i]
 
-            mention_start_positions = (input_ids == self.mention_start_token_id).nonzero(as_tuple=True)[0]
-            mention_end_positions = (input_ids == self.mention_end_token_id).nonzero(as_tuple=True)[0]
+            mention_start_positions = (input_ids == self.mention_start_token_id).nonzero()[0]
+            mention_end_positions = (input_ids == self.mention_end_token_id).nonzero()[0]
 
             assert len(mention_start_positions) > 0 and len(mention_end_positions) > 0, f"No markers found"
             mention_start_idx = mention_start_positions[0].item()

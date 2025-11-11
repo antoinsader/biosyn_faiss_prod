@@ -18,8 +18,7 @@ os.environ["TOKENIZERS_PARALLELISM"] = "true"
 os.environ["TOKENIZERS_NUM_THREADS"] = str(min(8, os.cpu_count() or 8))
 
 
-def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, max_length):
-    batch_size = cfg.tokenize.tokenize_batch_size
+def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, max_length, batch_size, tokenizer):
     N = len(names)
 
 
@@ -161,6 +160,7 @@ if __name__=="__main__":
 
 
     cfg = tokenizer_parse_args()
+    tokenize_batch_size = cfg.tokenize.tokenize_batch_size
     dictionary_max_length = cfg.tokenize.dictionary_max_length
     queries_max_length = cfg.tokenize.queries_max_length
     queries_annotated_total_window_tokens = cfg.tokenize.queries_annotated_total_window_tokens
@@ -202,7 +202,8 @@ if __name__=="__main__":
         tokenize_names(queries_sentences, 
                        tokens_paths.queries_input_ids_path, 
                        tokens_paths.queries_attention_mask_path, 
-                       max_length=queries_max_length)
+                       max_length=queries_max_length,
+                       batch_size=tokenize_batch_size, tokenizer = tokenizer)
 
         meta = {"shape": (len(queries_cuis), queries_max_length)}
         with open(tokens_paths.queries_meta  , "w") as f:
@@ -220,7 +221,8 @@ if __name__=="__main__":
         dictionary_names_annotated = [q[2] for q in dictionary]
         np.save(tokens_paths.dictionary_cuis_path, dictionary_cuis)
 
-        tokenize_names(dictionary_names_annotated, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length)
+        tokenize_names(dictionary_names_annotated, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
+                       batch_size=tokenize_batch_size, tokenizer=tokenizer)
         meta = {"shape": (len(dictionary_cuis), dictionary_max_length)}
         with open(tokens_paths.dictionary_meta  , "w") as f:
             json.dump(meta, f)
