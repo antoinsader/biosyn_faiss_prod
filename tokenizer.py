@@ -176,22 +176,23 @@ def filter_tokenized_dictionary(
     print(f"✅ Kept {kept_count:,} | ❌ Dropped {dropped_count:,} (missing [ME])")
     new_shape = (kept_count, max_length)
 
-    filtered_input_ids = np.memmap(
-        input_ids_memmap_path, mode="w+", dtype=np.int32, shape=new_shape
-    )
-    filtered_att_masks = np.memmap(
-        attention_masks_memmap_path, mode="w+", dtype=np.int32, shape=new_shape
-    )
+    tmp_input = input_ids_memmap_path + ".filtered"
+    tmp_att   = attention_masks_memmap_path + ".filtered"
+
+    filt_inp = np.memmap(tmp_input, mode="w+", dtype=np.int32, shape=new_shape)
+    filt_att = np.memmap(tmp_att, mode="w+", dtype=np.int32, shape=new_shape)
 
     kept_indices = np.nonzero(keep_mask)[0]
     for i in tqdm(range(0, kept_count, batch_size), desc="Writing filtered data"):
         end_i = min(i + batch_size, kept_count)
         idxs = kept_indices[i:end_i]
-        filtered_input_ids[i:end_i] = input_ids[idxs]
-        filtered_att_masks[i:end_i] = att_masks[idxs]
-
-    filtered_input_ids.flush()
-    filtered_att_masks.flush()
+        filt_inp[i:end_i] = input_ids[idxs]
+        filt_att[i:end_i] = att_masks[idxs]
+    filt_inp.flush()
+    filt_att.flush()
+    del filt_inp, filt_att, input_ids, att_masks  # ensure memmaps closed
+    os.replace(tmp_input, input_ids_memmap_path)
+    os.replace(tmp_att, attention_masks_memmap_path)
 
     print("Done. Filtered data updated.")
     return keep_mask
