@@ -43,7 +43,6 @@ class MyEncoder():
             The parameters are input_ids and attention_mask should be tensors
             use_amp if set to true the encoder will embed with fp16 (faster if available)
             use_no_grad if True, torch will save the gradient graph (only use in training forward pass, otherwise set to False)
-        
           cfg.normalize would normalize the result.
                 It is better to normalize all embedings so that the inner product became cosine similarity
         """

@@ -1,4 +1,7 @@
 
+# python train.py --training_log_name='minimzed dictionary' --use_small_dictionary --force_ivfpq
+
+
 import logging
 import torch
 import gc

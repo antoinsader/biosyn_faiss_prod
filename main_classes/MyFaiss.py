@@ -134,7 +134,7 @@ class MyFaiss():
 
             inp  = torch.as_tensor(dictionary_inputs_ids[batch_idx], device=self.device)
             att = torch.as_tensor(dictionary_attention_masks[batch_idx],device=self.device)
-
+        
             batch_embeds = self.encoder.get_emb(inp, att, use_amp=self.use_amp, use_no_grad=True)
             batch_embeds = batch_embeds.contiguous()
             samples_embeds[cursor : cursor+(end-start)] = batch_embeds
