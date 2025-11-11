@@ -21,6 +21,14 @@ os.environ["TOKENIZERS_NUM_THREADS"] = str(min(8, os.cpu_count() or 8))
 def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, max_length, batch_size, tokenizer):
     N = len(names)
 
+    print(f"Tokenizing...")
+    dataset = Dataset.from_dict({"text": names})
+    tokenized = dataset.map(
+        lambda e: tokenizer(e["text"], padding="max_length", truncation=True, max_length=max_length),
+        batched=True,
+        num_proc=min(8, os.cpu_count())
+    )
+    print(f"Finished tokenizing, saving..")
 
     input_ids_mmap = np.memmap(
         input_ids_memmap_path,
@@ -36,14 +44,6 @@ def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, ma
         shape=(N, max_length)
     )
 
-    print(f"Tokenizing...")
-    dataset = Dataset.from_dict({"text": names})
-    tokenized = dataset.map(
-        lambda e: tokenizer(e["text"], padding="max_length", truncation=True, max_length=max_length),
-        batched=True,
-        num_proc=min(8, os.cpu_count())
-    )
-    print(f"Finished tokenizing, saving..")
 
     for start in tqdm(range(0, N, batch_size), desc=f"Saving tokens"):
         end = min(start+batch_size, N)
@@ -55,7 +55,7 @@ def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, ma
     input_ids_mmap.flush()
     att_mask_mmap.flush()
 
-
+    return (N, max_length)
 
 def split_queries(cfg: GlobalConfig, train_queries_key='train_queries', test_queries_key='test_queries'):
     token_groups =  cfg.paths.get_default_token_groups()
@@ -153,7 +153,48 @@ def split_queries(cfg: GlobalConfig, train_queries_key='train_queries', test_que
     print(f"Train queries were having {train_n} entries, we split them {len(new_train_cuis)} entries for new train queries, and {len(new_test_cuis)} entries for new test queries")
 
 
+def filter_tokenized_dictionary(
+    input_ids_memmap_path,
+    attention_masks_memmap_path,
+    token_end_id,
+    shape,
+    batch_size=100_000,
+):
+    N, max_length = shape
+    input_ids = np.memmap(input_ids_memmap_path, mode="r", dtype=np.int32, shape=shape)
+    att_masks = np.memmap(attention_masks_memmap_path, mode="r", dtype=np.int32, shape=shape)
 
+    keep_mask = np.zeros(N, dtype=bool)
+    for start in tqdm(range(0, N, batch_size), desc="Scanning for [ME]"):
+        end = min(start + batch_size, N)
+        batch = input_ids[start:end]
+        # mark rows containing the token_end_id
+        keep_mask[start:end] = np.any(batch == token_end_id, axis=1)
+
+    kept_count = int(np.sum(keep_mask))
+    dropped_count = N - kept_count
+    print(f"✅ Kept {kept_count:,} | ❌ Dropped {dropped_count:,} (missing [ME])")
+    new_shape = (kept_count, max_length)
+
+    filtered_input_ids = np.memmap(
+        input_ids_memmap_path, mode="w+", dtype=np.int32, shape=new_shape
+    )
+    filtered_att_masks = np.memmap(
+        attention_masks_memmap_path, mode="w+", dtype=np.int32, shape=new_shape
+    )
+
+    kept_indices = np.nonzero(keep_mask)[0]
+    for i in tqdm(range(0, kept_count, batch_size), desc="Writing filtered data"):
+        end_i = min(i + batch_size, kept_count)
+        idxs = kept_indices[i:end_i]
+        filtered_input_ids[i:end_i] = input_ids[idxs]
+        filtered_att_masks[i:end_i] = att_masks[idxs]
+
+    filtered_input_ids.flush()
+    filtered_att_masks.flush()
+
+    print("Done. Filtered data updated.")
+    return keep_mask
 
 if __name__=="__main__":
     set_start_method("spawn", force=True)
@@ -204,6 +245,7 @@ if __name__=="__main__":
                        max_length=queries_max_length,
                        batch_size=tokenize_batch_size, tokenizer = tokenizer)
 
+
         meta = {"shape": (len(queries_cuis), queries_max_length)}
         with open(tokens_paths.queries_meta  , "w") as f:
             json.dump(meta, f)
@@ -216,16 +258,22 @@ if __name__=="__main__":
                                      special_token_start=mention_start_special_token, 
                                      special_token_end=mention_end_special_token,
                                     dictionary_max_chars_length=dictionary_max_chars_length,
-                                     
                                      )
         dictionary_cuis = [q[1] for q in dictionary]
         # dictionary_names = [q[0] for q in dictionary]
         dictionary_names_annotated = [q[2] for q in dictionary]
-        np.save(tokens_paths.dictionary_cuis_path, dictionary_cuis)
 
-        tokenize_names(dictionary_names_annotated, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
+        shape = tokenize_names(dictionary_names_annotated, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
                        batch_size=tokenize_batch_size, tokenizer=tokenizer)
-        meta = {"shape": (len(dictionary_cuis), dictionary_max_length)}
+
+
+        keep_mask = filter_tokenized_dictionary(tokens_paths.dictionary_input_ids_path, 
+                                    tokens_paths.dictionary_attention_mask_path, 
+                                    mention_end_token_id,
+                                    shape)
+        dictionary_cuis = np.array(dictionary_cuis)[keep_mask]
+        np.save(tokens_paths.dictionary_cuis_path, dictionary_cuis)
+        meta = {"shape": (len(dictionary_cuis), shape[1])}
         with open(tokens_paths.dictionary_meta  , "w") as f:
             json.dump(meta, f)
 
