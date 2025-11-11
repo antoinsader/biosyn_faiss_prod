@@ -163,8 +163,6 @@ if __name__=="__main__":
     tokenize_batch_size = cfg.tokenize.tokenize_batch_size
     dictionary_max_length = cfg.tokenize.dictionary_max_length
     queries_max_length = cfg.tokenize.queries_max_length
-    queries_annotated_total_window_tokens = cfg.tokenize.queries_annotated_total_window_tokens
-    queries_annotated_max_length = cfg.tokenize.queries_annotated_max_length
     mention_start_special_token = cfg.tokenize.special_tokens_dict["mention_start"]
     mention_end_special_token = cfg.tokenize.special_tokens_dict["mention_end"]
 

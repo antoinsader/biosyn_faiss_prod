@@ -67,12 +67,6 @@ class PathsConfig:
 class TokensConfig:
 
 
-    # This number represents how many tokens to show in the annotated query (sentence with the mention marked)
-    # I saw that in my traindev_lg, if I did 40, then 97 of the sentences length would be under the length of 279 which is relatively good 
-    queries_annotated_total_window_tokens = 40
-    queries_annotated_max_length = 279
-
-
     queries_max_length = 75
     dictionary_max_length = 48
 
