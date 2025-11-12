@@ -58,26 +58,27 @@ for start in range(0, N,batch_size):
     end = min(start + batch_size, N)
     inp  = torch.as_tensor(query_inputs[start:end], device=device)
     att = torch.as_tensor(query_att[start:end],device=device)
+    print(f"start:end: {start}:{end}")
     embs = my_encoder.get_emb(inp, att, use_amp=True, use_no_grad=True)
     del inp, att
 del embs
 torch.cuda.empty_cache()
 print(f"all queries were embeded successfully")
 
-N = tokens_paths.dictionary_shape[0]
-dictionary_entries_n  = N
+# N = tokens_paths.dictionary_shape[0]
+# dictionary_entries_n  = N
 
-dictionary_inputs = dataset.dictionary_input_ids
-dictionary_att = dataset.dictionary_attention_masks
+# dictionary_inputs = dataset.dictionary_input_ids
+# dictionary_att = dataset.dictionary_attention_masks
 
 
-for start in tqdm(range(0, N, batch_size), desc="Building faiss index"):
-    end = min(start + batch_size, N)
-    inp  = torch.as_tensor(dictionary_inputs[start:end], device=device)
-    att = torch.as_tensor(dictionary_att[start:end],device=device)
-    embs = my_encoder.get_emb(inp, att, use_amp=True, use_no_grad=True)
-    del inp, att
+# for start in tqdm(range(0, N, batch_size), desc="Building faiss index"):
+#     end = min(start + batch_size, N)
+#     inp  = torch.as_tensor(dictionary_inputs[start:end], device=device)
+#     att = torch.as_tensor(dictionary_att[start:end],device=device)
+#     embs = my_encoder.get_emb(inp, att, use_amp=True, use_no_grad=True)
+#     del inp, att
 
-del dictionary_inputs, dictionary_att
-torch.cuda.empty_cache()
-print(f"all dictionary entries were embeded successfully")
+# del dictionary_inputs, dictionary_att
+# torch.cuda.empty_cache()
+# print(f"all dictionary entries were embeded successfully")
