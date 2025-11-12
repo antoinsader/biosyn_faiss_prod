@@ -354,8 +354,8 @@ def get_annotated_query(text, mention_start, mention_end, special_token_start, s
 
     mention_len = end_tok - start_tok + 1
 
-    left_ratio = 0.7
-    pad = max(tokens_max_length - mention_len - 6, 0) # -6 because [cls] [sep] [ms] [me] and 2 for making sure
+    left_ratio = 0.6
+    pad = max(tokens_max_length - mention_len - 10, 0) # -10 because [cls] [sep] [ms] [me] and 6 for making sure
     left_b = int(pad * left_ratio)
     right_b = pad - left_b
 
