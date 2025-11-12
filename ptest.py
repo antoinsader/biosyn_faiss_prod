@@ -45,6 +45,12 @@ with open(cfg.paths.tokenizer_meta_path, "w") as f:
 my_encoder = MyEncoder(cfg)
 dataset = MyDataset(tokens_paths, cfg)
 
+train_queries = load_queries(
+            data_dir=cfg.paths.queries_raw_dir,
+            queries_max_length=queries_max_length,
+            special_token_start=mention_start_special_token ,
+            special_token_end=mention_end_special_token,
+            tokenizer=tokenizer)
 
 
 (tokens_size, max_length ) = tokens_paths.queries_shape
@@ -53,7 +59,28 @@ N = tokens_size
 query_inputs = dataset.queries_input_ids
 query_att = dataset.queries_attention_mask
 
+
+
+
 batch_size = 1024
+# 14336:15360
+start = 14336 
+end = 15360
+inp  = torch.as_tensor(query_inputs[start:end], device=device)
+inps_cut = query_inputs[start:end]
+
+cursor= 0
+for inp  in inps_cut:
+    idx = start + cursor
+    print(f"idx: {idx}" )
+    print(f"train query: {train_queries[idx]}")
+    mention_start_position = (inp == mention_start_token_id).nonzero()[0]
+    assert len(mention_start_position) > 0
+    mention_end_position = (inp == mention_end_token_id).nonzero()[0]
+    assert len(mention_end_position) > 0
+    cursor += 1
+
+
 for start in range(0, N,batch_size):
     end = min(start + batch_size, N)
     inp  = torch.as_tensor(query_inputs[start:end], device=device)
