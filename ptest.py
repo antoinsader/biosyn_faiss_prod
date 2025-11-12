@@ -63,23 +63,6 @@ query_att = dataset.queries_attention_mask
 
 
 batch_size = 1024
-# 14336:15360
-start = 14336 
-end = 15360
-inp  = torch.as_tensor(query_inputs[start:end], device=device)
-inps_cut = query_inputs[start:end]
-
-cursor= 0
-for inp  in inps_cut:
-    idx = start + cursor
-    print(f"idx: {idx}" )
-    print(f"train query: {train_queries[idx]}")
-    mention_start_position = (inp == mention_start_token_id).nonzero()[0]
-    assert len(mention_start_position) > 0
-    mention_end_position = (inp == mention_end_token_id).nonzero()[0]
-    assert len(mention_end_position) > 0
-    cursor += 1
-
 
 for start in range(0, N,batch_size):
     end = min(start + batch_size, N)
@@ -92,20 +75,20 @@ del embs
 torch.cuda.empty_cache()
 print(f"all queries were embeded successfully")
 
-# N = tokens_paths.dictionary_shape[0]
-# dictionary_entries_n  = N
+N = tokens_paths.dictionary_shape[0]
+dictionary_entries_n  = N
 
-# dictionary_inputs = dataset.dictionary_input_ids
-# dictionary_att = dataset.dictionary_attention_masks
+dictionary_inputs = dataset.dictionary_input_ids
+dictionary_att = dataset.dictionary_attention_masks
 
 
-# for start in tqdm(range(0, N, batch_size), desc="Building faiss index"):
-#     end = min(start + batch_size, N)
-#     inp  = torch.as_tensor(dictionary_inputs[start:end], device=device)
-#     att = torch.as_tensor(dictionary_att[start:end],device=device)
-#     embs = my_encoder.get_emb(inp, att, use_amp=True, use_no_grad=True)
-#     del inp, att
+for start in tqdm(range(0, N, batch_size), desc="Building faiss index"):
+    end = min(start + batch_size, N)
+    inp  = torch.as_tensor(dictionary_inputs[start:end], device=device)
+    att = torch.as_tensor(dictionary_att[start:end],device=device)
+    embs = my_encoder.get_emb(inp, att, use_amp=True, use_no_grad=True)
+    del inp, att
 
-# del dictionary_inputs, dictionary_att
-# torch.cuda.empty_cache()
-# print(f"all dictionary entries were embeded successfully")
+del dictionary_inputs, dictionary_att
+torch.cuda.empty_cache()
+print(f"all dictionary entries were embeded successfully")
