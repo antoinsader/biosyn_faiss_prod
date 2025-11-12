@@ -67,7 +67,8 @@ class PathsConfig:
 class TokensConfig:
 
 
-    queries_max_length = 75
+    queries_max_length = 75 #max tokens
+
     dictionary_max_length = 48
     dictionary_max_chars_length = 128 #if less would be skipped
 

@@ -310,73 +310,93 @@ class MyDataset(Dataset):
 #       LOADING DATA
 # ======================================
 
-def get_annotated_query(s, mention_start, mention_end, mention, special_token_start, special_token_end, tokens_max_length,total_window_tokens=40):
-    """
-        args:
-            s: full sentence containing the mention 
-            mention_start, mention_end: char index of sentence where the mention starts and ends
-            mention: the mention tokens
-        returns:
-            LEFT PART [MS] MENTION [ME] RIGHT PART
-    """
+def get_annotated_query(text, mention_start, mention_end, special_token_start, special_token_end, tokens_max_length, tokenizer, mention=None):
+    left_ratio=0.7
 
-    left_dot_pos = s.rfind('.', 0, mention_start)
-    left_comma_pos = s.rfind(',', 0, mention_start)
-    left_start_pos = max(left_dot_pos, left_comma_pos, 0)
-    left_part = s[left_start_pos + 1:mention_start]
-
-    right_dot_pos = s.find('.', mention_end)
-    right_end = right_dot_pos + 1 if right_dot_pos > -1 else len(s)
-    right_part = s[mention_end + 1: right_end]
+    left_dot = text.rfind('.', 0, mention_start) + 1
+    right_dot = text.find('.', mention_end)
+    if right_dot == -1:
+        right_dot = len(text)
 
 
-    s_trunc = left_part.strip() + " " + mention.strip() + " " + right_part.strip()
-
-    tokens = re.findall(r"\w+|[^\w\s]", s_trunc)
-    mention_tokens = re.findall(r"\w+|[^\w\s]", mention.strip())
-    
-
-    mention_start_new = len(left_part.strip()) + 1
-    mention_end_new = len(left_part.strip()) + len(mention.strip()) + 1
 
 
-    tokens_offsets = []
-    cursor = 0
-    for t in tokens:
-        start = s_trunc.find(t, cursor)
-        tokens_offsets.append((start, start + len(t)))
-        cursor = start + len(t)
-    s_trunc[mention_start_new: mention_end_new]
-
-    mention_token_start = next(i for i, (a, b) in enumerate(tokens_offsets) if a <= mention_start_new < b)
-    mention_token_end = next(i for i, (a, b) in enumerate(tokens_offsets) if b >= mention_end_new) + 1
-
-    pad_tokens_size = tokens_max_length  - len(mention_tokens) - 4
-    max_left = int(pad_tokens_size * 0.70)
-    max_right = pad_tokens_size - max_left
-
-    # tokens_left = tokens[:mention_token_start ][:max_left]
-    tokens_left = tokens[max(0, mention_token_start - max_left): mention_token_start]
-    
-    # tokens_right = tokens[mention_token_end : ][:total_window_tokens - (len(tokens_left) + (mention_token_end - mention_token_start))]
-    tokens_right = tokens[mention_token_end: mention_token_end + max_right]
+    num_newlines_before = text[:mention_start].count('\n')
+    mention_start = mention_start - num_newlines_before
+    mention_end = mention_end - num_newlines_before
 
 
+    cropped = text[left_dot:right_dot]
+    m_start = mention_start - (left_dot - 1 if left_dot > 0 else 0)
+    m_end = mention_end - (left_dot - 1 if left_dot > 0 else 0)
+    if mention != cropped[m_start:m_end] and mention == cropped[m_start - 1: m_end - 1] :
+        m_start = m_start -1
+        m_end = m_end -1
+
+
+    enc = tokenizer(cropped, add_special_tokens=False, return_offsets_mapping=True)
+    offsets = enc["offset_mapping"]
+    n = len(offsets)
+
+
+    mention_token_indices = [
+        i for i, (s, e) in enumerate(offsets)
+        if e > m_start and s < m_end
+    ]
+    if not mention_token_indices:
+        # fallback to nearest token
+        start_tok = next(i for i, (_, e) in enumerate(offsets) if e >= m_start)
+        end_tok = start_tok
+    else:
+        start_tok = mention_token_indices[0]
+        end_tok = mention_token_indices[-1]
+
+
+    mention_len = end_tok - start_tok + 1
+
+    left_ratio = 0.7
+    pad = max(tokens_max_length - mention_len - 6, 0) # -6 because [cls] [sep] [ms] [me] and 2 for making sure
+    left_b = int(pad * left_ratio)
+    right_b = pad - left_b
+
+
+
+    left_room = start_tok
+    right_room = n - (end_tok + 1)
+    if left_room < left_b:
+        right_b = min(right_b + (left_b - left_room), right_room)
+        left_b = left_room
+    elif right_room < right_b:
+        left_b = min(left_b + (right_b - right_room), left_room)
+        right_b = right_room
+
+
+    win_start = max(0, start_tok - left_b)
+    win_end = min(n, end_tok + 1 + right_b)
+
+
+    left_start = offsets[win_start][0]
+    left_end = offsets[start_tok][0]
+    mention_start_c = offsets[start_tok][0]
+    mention_end_c = offsets[end_tok][1]
+    right_start = mention_end_c
+    right_end = offsets[win_end - 1][1] if win_end - 1 < len(offsets) else len(cropped)
     annotated = (
-            " ".join(tokens_left).strip()
-            + f" {special_token_start} "
-            + mention.strip()
-            + f" {special_token_end} "
-            + " ".join(tokens_right).strip()
-        )
+        cropped[left_start:left_end].strip() + " "
+        + special_token_start + " "
+        + cropped[mention_start_c:mention_end_c].strip() + " "
+        + special_token_end + " "
+        + cropped[right_start:right_end].strip()
+    )
 
-    annotated = re.sub(r'\s+', ' ', annotated).strip()
-
-
+    # Clean up spacing
+    annotated = re.sub(r"\s+", " ", annotated).strip()
     return annotated
 
-def load_queries(data_dir, queries_max_length, special_token_start="[MS]" , special_token_end="[ME]",  filter_composite=True, filter_cuiless=True,filter_duplicate=True):
+def load_queries(data_dir, queries_max_length, special_token_start="[MS]" ,tokenizer=None, special_token_end="[ME]",  filter_composite=True, filter_cuiless=True,filter_duplicate=True, ):
     data = []
+    annotation_skipped = 0
+
     concept_files = glob.glob(os.path.join(data_dir, "*.concept"))
     for concept_file in tqdm(concept_files):
         with open(concept_file, "r", encoding='utf-8') as f:
@@ -406,14 +426,34 @@ def load_queries(data_dir, queries_max_length, special_token_start="[MS]" , spec
             with open(txt_path, "r", encoding="utf-8") as f:
                 full_text = f.read()
 
-            annotated = get_annotated_query(full_text, 
-                                            mention_start_idx, 
-                                            mention_end_idx, 
-                                            mention, 
-                                            special_token_start, 
-                                            special_token_end,
-                                            tokens_max_length=queries_max_length)
+
+            # print(f"text: {full_text}")
+            # print(f"mention_start: {mention_start_idx}")
+            # print(f"mention_end: {mention_end_idx}")
+            # print(f"mention: " , mention)
+
+            annotated = get_annotated_query(
+                text=full_text, 
+                mention_start=mention_start_idx, 
+                mention_end=mention_end_idx, 
+                special_token_start=special_token_start, 
+                special_token_end=special_token_end, 
+                tokens_max_length = queries_max_length, 
+                tokenizer=tokenizer)
+            
+            
+            ms_start = annotated.find(special_token_start)
+            cropped = annotated[ms_start + 4: ]
+            me_end = cropped.find(special_token_end)
+            if cropped[:me_end].strip() != mention.strip():
+                annotation_skipped += 1
+                continue
+
+
             data.append((mention, cui, annotated, txt_path, mention_start_idx, mention_end_idx))
+    
+    
+    print(f"annotation_skipped: {annotation_skipped}")
     if filter_duplicate:
         data = list(dict.fromkeys(data))
     data = np.array(data)
