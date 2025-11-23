@@ -27,7 +27,7 @@ def compute_metrics(scores, targets, k=5):
             valid_mask = (targets >= 0) & (targets < scores.size(1))
             targets_float.scatter_(1, targets[valid_mask].unsqueeze(1), 1.0)
         else:
-            targets_float = targets.float()
+            targets_float = targets.to(scores.device).float()
 
         # Positives and Negatives count
         num_pos = targets_float.sum(dim=1)
