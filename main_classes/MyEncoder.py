@@ -139,7 +139,7 @@ class MyEncoder():
         """
         assert isinstance(state, dict)
         self.encoder.load_state_dict(state['encoder'])
-        self.encoder.load_state_dict(state['projection'])
+        self.projection.load_state_dict(state['projection'])
 
 
     def get_state_dict(self):
