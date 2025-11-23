@@ -23,6 +23,8 @@ def compute_metrics(scores, targets, k=5):
         # Normalize targets to float for margin calc
         if targets.dtype == torch.long:
             # Convert info_nce targets (indices) to one-hot-like float
+            # Ensure targets is on the same device as scores
+            targets = targets.to(scores.device)
             targets_float = torch.zeros_like(scores)
             valid_mask = (targets >= 0) & (targets < scores.size(1))
             targets_float.scatter_(1, targets[valid_mask].unsqueeze(1), 1.0)
@@ -62,6 +64,8 @@ def compute_metrics(scores, targets, k=5):
             hits = (sorted_indices == t) & (t != -100)
         else:
             # targets is [B, N]
+            # Ensure targets is on the same device as sorted_indices
+            targets = targets.to(scores.device)
             # Gather targets in sorted order
             sorted_targets = targets.gather(1, sorted_indices)
             hits = sorted_targets > 0.5
