@@ -1,5 +1,6 @@
 
 import glob, json, os, torch, re
+import random
 
 from torch.utils.data import Dataset
 import numpy as np
@@ -459,7 +460,8 @@ def load_queries(data_dir, queries_max_length, special_token_start="[MS]" ,token
     data = np.array(data)
     return data
 
-def load_dictionary(dictionary_path, dictionary_max_chars_length, special_token_start="[MS]" , special_token_end="[ME]"):
+
+def load_dictionary_old(dictionary_path, dictionary_max_chars_length, special_token_start="[MS]" , special_token_end="[ME]"):
     data = []
     with open(dictionary_path, mode='r', encoding='utf-8') as f:
         lines = f.readlines()
@@ -471,4 +473,42 @@ def load_dictionary(dictionary_path, dictionary_max_chars_length, special_token_
             name_annotated = special_token_start + " "  + name + " " + special_token_end
             data.append((name,cui, name_annotated.strip()))
     data = np.array(data)
+    return data
+
+def load_dictionary(dictionary_path, dictionary_max_chars_length, special_token_start="[MS]" , special_token_end="[ME]"):
+
+    cui_to_names_set = defaultdict(set)
+    pre_data = []
+    with open(dictionary_path, mode='r', encoding='utf-8') as f:
+        lines = f.readlines()
+        for line in tqdm(lines, desc="pre process dictionary"):
+            line = line.strip()
+            if line == "": continue
+            cui, name = line.split("||")
+            if len(name) > dictionary_max_chars_length: continue
+            cui_to_names_set[cui].add(name)
+            pre_data.append((cui, name))
+
+    cui_to_names = {}
+    for cui, name_set in cui_to_names_set.items():
+        cui_to_names[cui] = sorted(list(name_set))
+    del cui_to_names_set
+
+    syns_k = 5
+    data = []
+    sep = " ; "
+    for cui,name in tqdm(pre_data, desc="annotating dictionary"):
+        syns = [s for s in cui_to_names[cui] if s != name]
+        num_syns = min(len(syns), syns_k)
+        syns_str = ""
+        if num_syns > 0:
+            if num_syns < len(syns):
+                syns = random.sample(syns, num_syns)
+            syns_str = sep + sep.join(syns)
+
+        name_annotated = f"{special_token_start} {name} {special_token_end} {syns_str}"
+        name_annotated = " ".join(name_annotated.split())
+        data.append(name, cui, name_annotated)
+    data = np.array(data)
+    
     return data
