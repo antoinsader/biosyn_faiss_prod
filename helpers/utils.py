@@ -76,7 +76,7 @@ def marginal_nll(scores, labels):
     # Mask out invalid entries (e.g., queries with no positives)
     valid_mask = labels.sum(dim=1) > 0
     if not valid_mask.any():
-        return torch.tensor(0.0, device=scores.device, requires_grad=True)
+        return scores.sum() * 0.0
 
     scores = scores[valid_mask]
     labels = labels[valid_mask]
