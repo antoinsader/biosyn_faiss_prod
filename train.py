@@ -84,13 +84,26 @@ class Trainer:
         self.scheduler.step()
 
 
+        with torch.no_grad():
+            scores_detached = batch_scores.detach()
+            labels_detached = batch_y.detach()
+            # 1. Extract Positive Scores (where label == 1)
+            # Sum across dim 1 to get the single positive scalar per query
+            pos_scores = (scores_detached * labels_detached).sum(dim=1)
+            # 2. Extract Negative Scores (where label == 0)
+            neg_scores_sum = (scores_detached * (1.0 - labels_detached)).sum(dim=1)
+            # Count negatives (Topk - 1 positive)
+            num_neg = batch_scores.size(1) - 1
+            avg_neg_scores = neg_scores_sum / max(1.0, num_neg)
+            # 3. Margin = Pos - Avg_Neg
+            batch_margin = (pos_scores - avg_neg_scores).mean().item()
 
         accuracy_5, mrr = compute_metrics(batch_scores.detach().cpu(), batch_y.cpu(), k=5)
 
 
 
         del batch_x, batch_y, batch_scores
-        return accuracy_5, mrr, loss.item()
+        return accuracy_5, mrr, loss.item(), batch_margin
 
 
 
@@ -152,24 +165,26 @@ class Trainer:
             persistent_workers=False
         )
         batches_train_start_time = time.time()
-        epoch_loss, epoch_accuracy_5, epoch_mrr = 0.0, 0.0, 0.0
+        epoch_loss, epoch_accuracy_5, epoch_mrr, epoch_margin = 0.0, 0.0, 0.0, 0.0
         n_batches = 0
 
 
         for i, data_loader_item in tqdm(enumerate(my_loader), total=len(my_loader), desc=f"epoch@{epoch} - Training batches"):
-            accuracy_5, mrr, loss = self.train_one_batch(data_loader_item)
+            accuracy_5, mrr, loss, batch_margin = self.train_one_batch(data_loader_item)
             epoch_accuracy_5 += accuracy_5
             epoch_mrr += mrr
             epoch_loss += loss
+            epoch_margin += batch_margin
             n_batches += 1
 
 
         avg_loss = epoch_loss / max(1, n_batches)
         avg_mrr = epoch_mrr / max(1, n_batches)
         avg_accuracy_5 = epoch_accuracy_5 / max(1, n_batches)
+        avg_margin = epoch_margin / max(1, n_batches) # Average
         self.logger.log_event(
             "Epoch summary",
-            message=f"Epoch average loss={avg_loss:.3f}, average mrr={avg_mrr:.4f}, average accuracy@5={avg_accuracy_5:.4f}.   loss_temp={self.cfg.train.loss_temperature:.3f}",
+            message=f"Epoch average loss={avg_loss:.3f}, average margin={avg_margin:.4f}, average mrr={avg_mrr:.4f}, average accuracy@5={avg_accuracy_5:.4f}.   loss_temp={self.cfg.train.loss_temperature:.3f}",
             epoch=epoch,
             t0=batches_train_start_time
         )
