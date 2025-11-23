@@ -14,7 +14,7 @@ from config import GlobalConfig, tokenizer_parse_args
 from helpers.Data import TokensPaths, load_queries, load_dictionary
 
 
-os.environ["TOKENIZERS_PARALLELISM"] = "true"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 os.environ["TOKENIZERS_NUM_THREADS"] = str(min(8, os.cpu_count() or 8))
 
 
@@ -26,7 +26,8 @@ def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, ma
     tokenized = dataset.map(
         lambda e: tokenizer(e["text"], padding="max_length", truncation=True, max_length=max_length),
         batched=True,
-        num_proc=min(8, os.cpu_count())
+        batch_size=20_000,
+        num_proc=os.cpu_count()
     )
     print(f"Finished tokenizing, saving..")
 
@@ -62,7 +63,7 @@ def split_queries(cfg: GlobalConfig, train_queries_key='train_queries', test_que
     train_queries_paths = token_groups[train_queries_key]
     test_queries_paths = token_groups[test_queries_key]
 
-    assert os.path.exists(train_queries_paths['input_ids']) and os.path.exists(train_queries_paths['attention_mask'])  and os.path.exists(train_queries_paths['cuis']), f'Trying to split the train queries but train queries tokens do not exits {train_queries_paths['input_ids']}'
+    assert os.path.exists(train_queries_paths['input_ids']) and os.path.exists(train_queries_paths['attention_mask'])  and os.path.exists(train_queries_paths['cuis']), f'Trying to split the train queries but train queries tokens do not exits {train_queries_paths["input_ids"]}'
 
     train_shape = TokensPaths.load_mmap_shape(train_queries_paths['meta'])
     train_inputs_mmap  = np.memmap(
