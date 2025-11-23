@@ -266,7 +266,7 @@ class MyDataset(Dataset):
             current_idxs = new_cands[query_idx].numpy()
             current_cuis = dict_cuis[current_idxs]
 
-            negative_mask = (current_cuis == query_cui)
+            negative_mask = (current_cuis != query_cui)
             available_positions = np.flatnonzero(negative_mask)
 
             # Inject hard positives
