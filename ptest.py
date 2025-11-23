@@ -45,12 +45,12 @@ with open(cfg.paths.tokenizer_meta_path, "w") as f:
 my_encoder = MyEncoder(cfg)
 dataset = MyDataset(tokens_paths, cfg)
 
-train_queries = load_queries(
-            data_dir=cfg.paths.queries_raw_dir,
-            queries_max_length=queries_max_length,
-            special_token_start=mention_start_special_token ,
-            special_token_end=mention_end_special_token,
-            tokenizer=tokenizer)
+# train_queries = load_queries(
+#             data_dir=cfg.paths.queries_raw_dir,
+#             queries_max_length=queries_max_length,
+#             special_token_start=mention_start_special_token ,
+#             special_token_end=mention_end_special_token,
+#             tokenizer=tokenizer)
 
 
 (tokens_size, max_length ) = tokens_paths.queries_shape
@@ -82,7 +82,7 @@ dictionary_inputs = dataset.dictionary_input_ids
 dictionary_att = dataset.dictionary_attention_masks
 
 
-for start in tqdm(range(0, N, batch_size), desc="Building faiss index"):
+for start in tqdm(range(0, N, batch_size), desc="Testing dictionary"):
     end = min(start + batch_size, N)
     inp  = torch.as_tensor(dictionary_inputs[start:end], device=device)
     att = torch.as_tensor(dictionary_att[start:end],device=device)

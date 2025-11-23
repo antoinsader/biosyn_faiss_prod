@@ -2,6 +2,7 @@ import os
 import json
 import torch
 import torch.nn.functional as F
+import torch.nn as nn
 from transformers import AutoModel
 
 from config import GlobalConfig
@@ -36,7 +37,12 @@ class MyEncoder():
         self.mention_end_token_id = tokenizer_meta["mention_end_token_id"]
 
         self.encoder = encoder.to(self.device)
-        self.cfg.hidden_size = self.encoder.config.hidden_size
+        self.hidden_size = self.encoder.config.hidden_size
+        self.cfg.hidden_size = self.hidden_size
+
+        # This is new because now I want to project the embeding of [cls] and the embeding of the spans mean [ms] + [me] / 2 into 786 vector 
+        self.projection = nn.Linear(self.hidden_size * 2, self.hidden_size)
+        self.projection.to(self.device)
 
     def get_emb(self, input_ids_tensor, attention_mask_tensor, use_amp=False, use_no_grad=False):
         """
@@ -51,35 +57,58 @@ class MyEncoder():
             input_ids_tensor = torch.as_tensor(input_ids_tensor, device = self.device)
 
         
-
         context = torch.inference_mode() if use_no_grad else torch.enable_grad()
         with context, torch.amp.autocast(device_type="cuda", enabled=(self.use_cuda and use_amp)):
-            # Hidden state, (batch, seq_len, hidden)
-            emb = self.encoder(input_ids=input_ids_tensor, attention_mask=attention_mask_tensor)[0]
+            # (batch, seq_len, hidden)
+            outputs = self.encoder(input_ids=input_ids_tensor, attention_mask=attention_mask_tensor)
+            last_hidden_state = outputs.last_hidden_state
+
+            # extract [cls]
+            cls_emb =  last_hidden_state[:, 0, :]
+
+            # extract span
+            batch_size, seq_len, _ = last_hidden_state.size()
+            
+            # Create range tensor for masking
+            # (1, seq_len)
+            seq_range = torch.arange(seq_len, device=self.device).unsqueeze(0)
+            
+            # Find start and end indices
+            # We assume there is exactly one start and one end token per sequence as per original code assertions
+            # (batch_size, )
+            mention_start_indices = (input_ids_tensor == self.mention_start_token_id).float().argmax(dim=1)
+            mention_end_indices = (input_ids_tensor == self.mention_end_token_id).float().argmax(dim=1)
+            
+            # Create mask: start < index < end
+            # (batch_size, seq_len)
+            mask = (seq_range > mention_start_indices.unsqueeze(1)) & (seq_range < mention_end_indices.unsqueeze(1))
+            
+            # Compute mean
+            # (batch_size, seq_len, 1)
+            mask_expanded = mask.unsqueeze(-1).float()
+            
+            # Sum of embeddings in span
+            # (batch_size, hidden)
+            sum_embs = (last_hidden_state * mask_expanded).sum(dim=1)
+            
+            # Count of tokens in span
+            # (batch_size, 1)
+            counts = mask_expanded.sum(dim=1)
+            
+            # Avoid division by zero (though assertions in original imply valid spans)
+            counts = torch.clamp(counts, min=1.0)
+            
+            span_embs = sum_embs / counts
 
 
-        batch_size, seq_len, hidden_size = emb.size()
-        embs = torch.zeros((batch_size, hidden_size), device=self.device)
-        for i in range(batch_size):
-            input_ids = input_ids_tensor[i]
+            combined_embs = torch.cat((cls_emb, span_embs), dim=1)
+            embs = self.projection(combined_embs)
 
-            mention_start_positions = (input_ids == self.mention_start_token_id).nonzero()[0]
-            mention_end_positions = (input_ids == self.mention_end_token_id).nonzero()[0]
+            if self.cfg.normalize:
+                embs = F.normalize(embs, p=2, dim=1)
 
-            assert len(mention_start_positions) > 0 and len(mention_end_positions) > 0, f"No markers found"
-            mention_start_idx = mention_start_positions[0].item()
-            mention_end_idx = mention_end_positions[0].item()
+        return embs
 
-            assert mention_end_idx > mention_start_idx + 1, f"Malformed span !!"
-            span_emb = emb[i, mention_start_idx + 1: mention_end_idx] # (span len, hidden)
-            embs[i] = span_emb.mean(dim=0)
-
-
-
-        if self.cfg.normalize:
-            ret = F.normalize(embs , p=2, dim=1)
-
-        return ret
 
     def freeze_lower_layers(self, num_layers_to_freeze=6):
         """
