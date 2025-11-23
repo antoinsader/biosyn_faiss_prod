@@ -495,7 +495,12 @@ def load_dictionary(dictionary_path, dictionary_max_chars_length, special_token_
     del cui_to_names_set
 
     syns_k = 5
-    data = []
+    syns_k = 5
+    # data = []
+    names_list = []
+    cuis_list = []
+    names_annotated_list = []
+    
     sep = " ; "
     for cui,name in tqdm(pre_data, desc="annotating dictionary"):
         syns = [s for s in cui_to_names[cui] if s != name]
@@ -507,7 +512,11 @@ def load_dictionary(dictionary_path, dictionary_max_chars_length, special_token_
             syns_str = sep + sep.join(syns)
 
         name_annotated = f"{special_token_start} {name} {special_token_end} {syns_str}"
-        data.append((name, cui, name_annotated))
+        # data.append((name, cui, name_annotated))
+        names_list.append(name)
+        cuis_list.append(cui)
+        names_annotated_list.append(name_annotated)
+    
     # data = np.array(data) # Optimization: Return list to avoid slow numpy conversion of strings
     
-    return data
+    return names_list, cuis_list, names_annotated_list

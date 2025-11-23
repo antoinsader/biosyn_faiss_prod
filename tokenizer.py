@@ -258,14 +258,11 @@ if __name__=="__main__":
 
     if not cfg.tokenize.skip_tokenize_dictionary:
         print(f"Reading dictionary...")
-        dictionary = load_dictionary(cfg.paths.dictionary_raw_path, 
+        _, dictionary_cuis, dictionary_names_annotated = load_dictionary(cfg.paths.dictionary_raw_path, 
                                      special_token_start=mention_start_special_token, 
                                      special_token_end=mention_end_special_token,
                                     dictionary_max_chars_length=dictionary_max_chars_length,
                                      )
-        dictionary_cuis = [q[1] for q in dictionary]
-        # dictionary_names = [q[0] for q in dictionary]
-        dictionary_names_annotated = [q[2] for q in dictionary]
 
         shape = tokenize_names(dictionary_names_annotated, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
                        batch_size=tokenize_batch_size, tokenizer=tokenizer)
