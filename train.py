@@ -86,18 +86,32 @@ class Trainer:
 
         with torch.no_grad():
             scores_detached = batch_scores.detach()
-            labels_detached = batch_y.detach()
-            # 1. Extract Positive Scores (where label == 1)
-            # Sum across dim 1 to get the single positive scalar per query
-            pos_scores = (scores_detached * labels_detached).sum(dim=1)
-            # 2. Extract Negative Scores (where label == 0)
-            neg_scores_sum = (scores_detached * (1.0 - labels_detached)).sum(dim=1)
-            # Count negatives (Topk - 1 positive)
-            num_neg = batch_scores.size(1) - 1
-            avg_neg_scores = neg_scores_sum / max(1.0, num_neg)
-            # 3. Margin = Pos - Avg_Neg
-            batch_margin = (pos_scores - avg_neg_scores).mean().item()
+            # Move labels to GPU to match scores
+            labels_detached = batch_y.detach().to(scores_detached.device)
 
+            # 1. Count Positives and Negatives per query
+            # Summing the labels gives the number of positives (since they are 1.0)
+            num_pos = labels_detached.sum(dim=1)
+            # The rest are negatives
+            num_neg = (1.0 - labels_detached).sum(dim=1)
+
+            # Safety clamp to avoid division by zero (just in case)
+            num_pos_safe = torch.clamp(num_pos, min=1.0)
+            num_neg_safe = torch.clamp(num_neg, min=1.0)
+
+            # 2. Calculate Average Positive Score
+            # Mask scores by labels (keeps only positives)
+            pos_scores_sum = (scores_detached * labels_detached).sum(dim=1)
+            avg_pos_score = pos_scores_sum / num_pos_safe
+
+            # 3. Calculate Average Negative Score
+            # Mask scores by inverse labels (keeps only negatives)
+            neg_scores_sum = (scores_detached * (1.0 - labels_detached)).sum(dim=1)
+            avg_neg_score = neg_scores_sum / num_neg_safe
+
+            # 4. Calculate Margin
+            # (Avg Score of Correct Answers) - (Avg Score of Wrong Answers)
+            batch_margin = (avg_pos_score - avg_neg_score).mean().item()
         accuracy_5, mrr = compute_metrics(batch_scores.detach().cpu(), batch_y.cpu(), k=5)
 
 
