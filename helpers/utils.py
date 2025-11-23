@@ -45,7 +45,9 @@ def compute_metrics(scores, targets, k=5):
         
         # Margin: avg_pos - avg_neg
         # If a query has no positives, avg_pos_score is 0.
-        margin = (avg_pos_score - avg_neg_score).mean().item()
+        # Margin: avg_pos - avg_neg
+        # If a query has no positives, avg_pos_score is 0.
+        margin = (avg_pos_score - avg_neg_score).mean()
 
         # --- Accuracy and MRR ---
         batch_size, n_candidates = scores.shape
@@ -66,7 +68,7 @@ def compute_metrics(scores, targets, k=5):
 
         # Accuracy @ k
         hits_k = hits[:, :k]
-        acc_at_k = hits_k.any(dim=1).float().mean().item()
+        acc_at_k = hits_k.any(dim=1).float().mean()
         
         # MRR
         # Ranks: 1, 2, 3...
@@ -82,7 +84,7 @@ def compute_metrics(scores, targets, k=5):
         
         # Reciprocal rank (1/inf = 0)
         reciprocal_ranks = 1.0 / first_rank
-        mrr = reciprocal_ranks.mean().item()
+        mrr = reciprocal_ranks.mean()
 
     return acc_at_k, mrr, margin
 

@@ -262,7 +262,7 @@ class MyDataset(Dataset):
         dict_cuis = self.dictionary_cuis
         queries_cuis = self.queries_cuis
 
-        for query_idx in range(num_queries):
+        for query_idx in tqdm(range(num_queries), desc="Updating candidate pool"):
             query_cui = queries_cuis[query_idx]
             current_idxs = new_cands[query_idx].numpy()
             current_cuis = dict_cuis[current_idxs]

@@ -57,7 +57,7 @@ class Trainer:
 
 
 
-    def train_one_batch(self, data_loader_item):
+    def train_one_batch(self, data_loader_item, return_scores=False):
         """
             What we will do in one batch is:
                 - extracting batch_x, batch_y from the dataloader item
@@ -84,14 +84,12 @@ class Trainer:
         self.scheduler.step()
 
 
-        # Calculate metrics (Accuracy, MRR, Margin) using optimized function
-        # Pass tensors on device (no .cpu())
-        accuracy_5, mrr, batch_margin = compute_metrics(batch_scores.detach(), batch_y, k=5)
 
-
-
-        del batch_x, batch_y, batch_scores
-        return accuracy_5, mrr, loss.item(), batch_margin
+        # Calculate metrics less frequently to reduce overhead
+        # Only compute every 100 batches or return zeros
+        if return_scores:
+            return loss.detach(), batch_scores.detach()
+        return loss.detach()
 
 
 
@@ -150,26 +148,46 @@ class Trainer:
             shuffle=True,
             pin_memory=self.use_cuda,
             num_workers=self.cfg.train.num_workers,
-            persistent_workers=False
+            persistent_workers=(self.cfg.train.num_workers > 0),  # Keep workers alive between batches
+            prefetch_factor=2 if self.cfg.train.num_workers > 0 else None  # Prefetch 2 batches per worker
         )
         batches_train_start_time = time.time()
-        epoch_loss, epoch_accuracy_5, epoch_mrr, epoch_margin = 0.0, 0.0, 0.0, 0.0
+        epoch_loss = torch.tensor(0.0, device=self.device)
+        epoch_accuracy_5 = torch.tensor(0.0, device=self.device)
+        epoch_mrr = torch.tensor(0.0, device=self.device)
+        epoch_margin = torch.tensor(0.0, device=self.device)
         n_batches = 0
+        n_metric_samples = 0  # Count how many times we compute metrics
 
 
         for i, data_loader_item in tqdm(enumerate(my_loader), total=len(my_loader), desc=f"epoch@{epoch} - Training batches"):
-            accuracy_5, mrr, loss, batch_margin = self.train_one_batch(data_loader_item)
-            epoch_accuracy_5 += accuracy_5
-            epoch_mrr += mrr
+            # Compute metrics every 100 batches to reduce overhead
+            compute_metrics_now = (i % 100 == 0 or i == len(my_loader) - 1)
+            
+            if compute_metrics_now:
+                loss, batch_scores = self.train_one_batch(data_loader_item, return_scores=True)
+                # batch_y is the second element of data_loader_item
+                _, batch_y = data_loader_item
+                
+                # We need to ensure batch_y is on the correct device if it isn't already handled by compute_metrics
+                # compute_metrics handles device transfer for targets now, so we can pass as is
+                
+                accuracy_5, mrr, batch_margin = compute_metrics(batch_scores, batch_y, k=5)
+                epoch_accuracy_5 += accuracy_5
+                epoch_mrr += mrr
+                epoch_margin += batch_margin
+                n_metric_samples += 1
+            else:
+                loss = self.train_one_batch(data_loader_item, return_scores=False)
+                
             epoch_loss += loss
-            epoch_margin += batch_margin
             n_batches += 1
 
 
-        avg_loss = epoch_loss / max(1, n_batches)
-        avg_mrr = epoch_mrr / max(1, n_batches)
-        avg_accuracy_5 = epoch_accuracy_5 / max(1, n_batches)
-        avg_margin = epoch_margin / max(1, n_batches) # Average
+        avg_loss = (epoch_loss / max(1, n_batches)).item()
+        avg_mrr = (epoch_mrr / max(1, n_metric_samples)).item()
+        avg_accuracy_5 = (epoch_accuracy_5 / max(1, n_metric_samples)).item()
+        avg_margin = (epoch_margin / max(1, n_metric_samples)).item()  # Average
         self.logger.log_event(
             "Epoch summary",
             message=f"Epoch average loss={avg_loss:.3f}, average margin={avg_margin:.4f}, average mrr={avg_mrr:.4f}, average accuracy@5={avg_accuracy_5:.4f}.   loss_temp={self.cfg.train.loss_temperature:.3f}",
@@ -236,7 +254,7 @@ class Trainer:
         #       2- EPOCH TRAINING
         # ===================================================
         avergae_loss, average_mrr, average_accuracy_5, last_faiss_recall = 0.0, 0.0, 0.0, 0.0
-        assert int(start_epoch) > 0 and int(start_epoch) < self.cfg.train.num_epochs 
+        assert int(start_epoch) > 0 and int(start_epoch) <= self.cfg.train.num_epochs 
         for epoch in range(start_epoch, self.cfg.train.num_epochs + 1):
             if self.use_cuda:
                 torch.cuda.reset_peak_memory_stats()
