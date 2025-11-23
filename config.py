@@ -132,14 +132,18 @@ class ModelConfig:
 class TrainingConfig:
     num_epochs: int = 10
     batch_size: int = 16
-    learning_rate: float = 5e-5
+    
+
+    learning_rate: float = 5e-6 #5e-5 
+
+
     weight_decay: float = 0.001
     num_workers: int = 8
     topk: int = 20
     loss_type: str = "marginal_nll" # info_nce_loss
     optimizer_name: str = "AdamW" # Adam
     use_amp: bool = True
-    loss_temperature: float = 0.2 # if small dict 0.07
+    loss_temperature: float = 0.06
     save_checkpoints:bool = True
     load_last_checkpoint:bool = True
     use_small_dictionary: bool = False

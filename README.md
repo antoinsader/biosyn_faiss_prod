@@ -190,18 +190,6 @@ Training is handled by `train.py`.
 - At first, we check if any unfinished experiments exist, if yes we will restore checkpoint from this experiment, otherwise create a new experiment
 - The experiments metadata are saved in `./logs/logger_all.json`
 
-#### 2. Loss temperature warmup:
-- Each epoch dynamically calculates its own loss temperature based on the equation:
-
-```
-    cfg.train.loss_temperature = max(0.05, 0.15 * (0.88 ** (epoch - 1)))
-```
-
-Thus, if we have 10 epochs, we will have the loss temperatures:
-[0.17045454545454547, 0.15, 0.132, 0.11615999999999999, 0.10222079999999999, 0.089954304, 0.07915978752, 0.0696606130176, 0.061301339455488, 0.05394517872082944]
-
-This lowers gradually the temperature, stabilizing early learning.
-
 
 #### 3. Each epoch workflow:
 
