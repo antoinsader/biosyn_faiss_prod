@@ -507,8 +507,7 @@ def load_dictionary(dictionary_path, dictionary_max_chars_length, special_token_
             syns_str = sep + sep.join(syns)
 
         name_annotated = f"{special_token_start} {name} {special_token_end} {syns_str}"
-        name_annotated = " ".join(name_annotated.split())
-        data.append(name, cui, name_annotated)
+        data.append((name, cui, name_annotated))
     data = np.array(data)
     
     return data
