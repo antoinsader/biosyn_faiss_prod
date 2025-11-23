@@ -163,6 +163,42 @@ def verify_data_injection():
         diff = (cands_orig != cands_opt).sum()
         print(f"Number of differing elements: {diff}")
 
+def verify_metrics():
+    print("\nVerifying compute_metrics...")
+    from helpers.utils import compute_metrics
+    
+    batch_size = 10
+    topk = 5
+    
+    # Case 1: Float targets (marginal_nll)
+    scores = torch.randn(batch_size, topk)
+    targets = torch.randint(0, 2, (batch_size, topk)).float()
+    
+    # Ensure at least one positive per query for simpler checking
+    targets[:, 0] = 1.0
+    
+    acc, mrr, margin = compute_metrics(scores, targets, k=3)
+    print(f"Float Targets - Acc: {acc}, MRR: {mrr}, Margin: {margin}")
+    
+    # Manual check for one query
+    q_idx = 0
+    s = scores[q_idx]
+    t = targets[q_idx]
+    
+    # Margin
+    pos_mask = t == 1.0
+    neg_mask = t == 0.0
+    avg_pos = s[pos_mask].mean() if pos_mask.any() else 0.0
+    avg_neg = s[neg_mask].mean() if neg_mask.any() else 0.0
+    expected_margin_0 = (avg_pos - avg_neg).item()
+    print(f"Query 0 Expected Margin: {expected_margin_0}")
+    
+    # Case 2: Long targets (info_nce)
+    targets_long = torch.randint(0, topk, (batch_size,))
+    acc_l, mrr_l, margin_l = compute_metrics(scores, targets_long, k=3)
+    print(f"Long Targets - Acc: {acc_l}, MRR: {mrr_l}, Margin: {margin_l}")
+
 if __name__ == "__main__":
-    verify_faiss_recall()
-    verify_data_injection()
+    # verify_faiss_recall()
+    # verify_data_injection()
+    verify_metrics()
