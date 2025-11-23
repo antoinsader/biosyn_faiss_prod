@@ -130,13 +130,17 @@ class MyEncoder():
         """
         os.makedirs(dir, exist_ok=True)
         self.encoder.save_pretrained(dir)
+        torch.save(self.projection.state_dict(), os.path.join(dir, "projection.pth"))
         return True
 
     def load_state(self, state):
         """
             For restoring checkpoint
         """
-        self.encoder.load_state_dict(state)
+        assert isinstance(state, dict)
+        self.encoder.load_state_dict(state['encoder'])
+        self.encoder.load_state_dict(state['projection'])
+
 
     def get_state_dict(self):
         return self.encoder.state_dict()

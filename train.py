@@ -195,7 +195,12 @@ class Trainer:
     def save_checkpoint(self,epoch):
         ckpt = {
             "epoch": epoch,
-            "model_state": self.model.encoder.get_state_dict(),
+            "model_state": 
+            {
+                "encoder": self.model.encoder.get_state_dict(),
+                "projection": self.model.encoder.projection.state_dict(),
+            },
+            
             "optimizer_state": self.model.optimizer.state_dict(),
             "scheduler_state": self.scheduler.state_dict(),
             "scaler_state": self.scaler.state_dict(),
