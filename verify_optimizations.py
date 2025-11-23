@@ -180,18 +180,32 @@ def verify_metrics():
     acc, mrr, margin = compute_metrics(scores, targets, k=3)
     print(f"Float Targets - Acc: {acc}, MRR: {mrr}, Margin: {margin}")
     
-    # Manual check for one query
-    q_idx = 0
-    s = scores[q_idx]
-    t = targets[q_idx]
+    # Calculate expected margin for the whole batch
+    expected_margins = []
+    for i in range(batch_size):
+        s = scores[i]
+        t = targets[i]
+        pos_mask = t == 1.0
+        neg_mask = t == 0.0
+        avg_pos = s[pos_mask].mean() if pos_mask.any() else 0.0
+        avg_neg = s[neg_mask].mean() if neg_mask.any() else 0.0
+        expected_margins.append((avg_pos - avg_neg).item())
     
-    # Margin
-    pos_mask = t == 1.0
-    neg_mask = t == 0.0
-    avg_pos = s[pos_mask].mean() if pos_mask.any() else 0.0
-    avg_neg = s[neg_mask].mean() if neg_mask.any() else 0.0
-    expected_margin_0 = (avg_pos - avg_neg).item()
-    print(f"Query 0 Expected Margin: {expected_margin_0}")
+    expected_margin_avg = sum(expected_margins) / batch_size
+    print(f"Expected Margin (Avg): {expected_margin_avg}")
+    
+    # DEBUG: Print first query details
+    print(f"DEBUG Query 0:")
+    print(f"  Scores: {scores[0]}")
+    print(f"  Targets: {targets[0]}")
+    print(f"  Pos Mask: {targets[0] == 1.0}")
+    print(f"  Avg Pos: {expected_margins[0] + (scores[0][targets[0]==0.0].mean() if (targets[0]==0.0).any() else 0.0)}") # Reconstruct avg_pos roughly
+    print(f"  Calculated Margin: {expected_margins[0]}")
+    
+    if np.isclose(margin, expected_margin_avg, atol=1e-4):
+        print("SUCCESS: Margins match.")
+    else:
+        print("FAILURE: Margins do NOT match.")
     
     # Case 2: Long targets (info_nce)
     targets_long = torch.randint(0, topk, (batch_size,))

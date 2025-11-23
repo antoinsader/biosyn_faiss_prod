@@ -174,7 +174,7 @@ def filter_tokenized_dictionary(
 
     kept_count = int(np.sum(keep_mask))
     dropped_count = N - kept_count
-    print(f"✅ Kept {kept_count:,} | ❌ Dropped {dropped_count:,} (missing [ME])")
+    print(f"Kept {kept_count:,} | Dropped {dropped_count:,} (missing [ME])")
     new_shape = (kept_count, max_length)
 
     tmp_input = input_ids_memmap_path + ".filtered"
@@ -210,6 +210,8 @@ if __name__=="__main__":
     mention_start_special_token = cfg.tokenize.special_tokens_dict["mention_start"]
     mention_end_special_token = cfg.tokenize.special_tokens_dict["mention_end"]
 
+    queries_cuis = None
+    dictionary_cuis = None
 
     tokens_paths  = TokensPaths(cfg, dictionary_key='dictionary', queries_key='train_queries')
 

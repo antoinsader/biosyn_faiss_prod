@@ -80,7 +80,9 @@ class MyFaiss():
         #Init the index
         index = faiss.GpuIndexIVFPQ(gpu_resources, quantizer, self.hidden_size, num_clusters, num_quantizers, nbits)
 
-        index.useFloat16LookupTables = self.use_amp
+        # useFloat16LookupTables was removed in newer FAISS versions
+        if hasattr(index, 'useFloat16LookupTables'):
+            index.useFloat16LookupTables = self.use_amp
         #nprobe is the numbers of clusters to be visited during search, higher means more accurate but slower
         # 1-10% of nlist, we are using now 6%
         index.nprobe = self.cfg_faiss.n_probe(num_clusters)

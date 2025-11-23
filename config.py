@@ -340,7 +340,7 @@ def train_parse_args():
         cfg.model.model_name = args.encoder_model_name
 
     if args.num_epochs:
-        assert  8 <= args.num_epochs < 25, f'Num epochs should be between 8 and 25'
+        assert  1 <= args.num_epochs < 25, f'Num epochs should be between 1 and 25'
         cfg.train.num_epochs = args.num_epochs
     if args.train_batch_size:
         cfg.train.batch_size = args.train_batch_size

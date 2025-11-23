@@ -1,0 +1,9 @@
+[
+  {
+    "id": 1,
+    "start_time": "2025-11-23_22-06-17",
+    "train_started": true,
+    "finished": false,
+    "log_details_file": "./logs/log_1_2025-11-23_22-06-17.log"
+  }
+]

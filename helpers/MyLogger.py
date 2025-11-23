@@ -3,7 +3,12 @@
 
 
 import datetime
-import  json, psutil, os, torch, time, logging
+import  json, os, torch, time, logging
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
 from config import GlobalConfig
 
 
@@ -44,7 +49,10 @@ class MyLogger:
 
         self.use_cuda = torch.cuda.is_available()
         self.device = "cuda" if self.use_cuda else "cpu"
-        self.process = psutil.Process(os.getpid())
+        if psutil:
+            self.process = psutil.Process(os.getpid())
+        else:
+            self.process = None
 
         self._set_log_file_to_logger()
 
@@ -66,8 +74,10 @@ class MyLogger:
         """
             Return the rss of the cpu ram
         """
-        rss = self.process.memory_info().rss / (1024 ** 2)
-        return rss
+        if self.process:
+            rss = self.process.memory_info().rss / (1024 ** 2)
+            return rss
+        return 0.0
 
 
     def current_gpu_mem_usage(self):
