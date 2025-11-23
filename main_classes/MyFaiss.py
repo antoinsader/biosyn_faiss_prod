@@ -222,12 +222,16 @@ class MyFaiss():
         dictionary_cuis = np.array(self.dataset.dictionary_cuis)
         num_queries = len(queries_cuis)
 
-        correct = 0
-        for i in range(num_queries):
-            query_cui = queries_cuis[i]
-            retreived_candidates_cuis = dictionary_cuis[candidates_idxs[i, :k]]
-            if query_cui in retreived_candidates_cuis:
-                correct += 1
+        # Vectorized implementation
+        # Get CUIs for all retrieved candidates: (num_queries, k)
+        retrieved_candidates_cuis = dictionary_cuis[candidates_idxs[:, :k]]
+        
+        # Check if query_cui is present in each row of retrieved candidates
+        # queries_cuis[:, None] adds a dimension to make it (num_queries, 1) for broadcasting
+        matches = (retrieved_candidates_cuis == queries_cuis[:, None])
+        
+        # A query is correct if there is at least one match in the top k
+        correct = np.any(matches, axis=1).sum()
 
         return correct / max(num_queries, 1)
 
