@@ -134,8 +134,8 @@ class Trainer:
 
 
         self.dataset.set_candidates(candidates_idxs)
-        recall_faiss = self.faiss.compute_faiss_recall_at_k(candidates_idxs, k=self.topk)
-        self.logger.log_event(f"Faiss recall@{self.topk}", message= f"{recall_faiss:.4f}", epoch=epoch, log_memory=False)
+        recall_faiss, recall_faiss_k2 = self.faiss.compute_faiss_recall_at_k(candidates_idxs, k=self.topk, k2=5)
+        self.logger.log_event(f"Faiss recall", message= f"faiss recall@{self.topk}: {recall_faiss:.4f}. faiss recall@5: {recall_faiss_k2:.4f}", epoch=epoch, log_memory=False)
 
 
 

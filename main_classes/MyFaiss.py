@@ -210,7 +210,7 @@ class MyFaiss():
         gc.collect()
         return candidates
 
-    def compute_faiss_recall_at_k(self,candidates_idxs, k=10):
+    def compute_faiss_recall_at_k(self,candidates_idxs, k=10, k2=5):
         """
             For each query, there are topk candidates.
             How many queries have in their first k candidates the correct cui.
@@ -218,19 +218,27 @@ class MyFaiss():
 
         assert candidates_idxs is not None
         k = min(self.topk, k)
+        k2 = min(self.topk, k2)
 
         queries_cuis = self.dataset.queries_cuis
         dictionary_cuis = np.array(self.dataset.dictionary_cuis)
         num_queries = len(queries_cuis)
 
-        correct = 0
-        for i in range(num_queries):
-            query_cui = queries_cuis[i]
-            retreived_candidates_cuis = dictionary_cuis[candidates_idxs[i, :k]]
-            if query_cui in retreived_candidates_cuis:
-                correct += 1
+        # Vectorized implementation
+        # Get CUIs for all retrieved candidates: (num_queries, k)
+        retrieved_candidates_cuis = dictionary_cuis[candidates_idxs[:, :k]]
+        retrieved_candidates_cuis_k2 = dictionary_cuis[candidates_idxs[:, :k2]]
+        
+        # Check if query_cui is present in each row of retrieved candidates
+        # queries_cuis[:, None] adds a dimension to make it (num_queries, 1) for broadcasting
+        matches = (retrieved_candidates_cuis == queries_cuis[:, None])
+        matches_k2 = (retrieved_candidates_cuis_k2 == queries_cuis[:, None])
+        
+        # A query is correct if there is at least one match in the top k
+        correct = np.any(matches, axis=1).sum()
+        correct_k2 = np.any(matches_k2, axis=1).sum()
 
-        return correct / max(num_queries, 1)
+        return correct / max(num_queries, 1), correct_k2 / max(num_queries, 1)
 
 
     def load_faiss_index(self, path):
