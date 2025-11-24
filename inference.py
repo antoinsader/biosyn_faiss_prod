@@ -31,20 +31,17 @@ def tokenize_mention(mention, tokenizer, max_length=75):
     """
     Tokenize a single mention
     """
-    
-    tokens = tokenizer.encode(mention, add_special_tokens=False)
-    
-    # Pad or truncate
-    if len(tokens) > max_length:
-        tokens = tokens[:max_length]
-    
-    # Create input_ids and attention_mask
-    input_ids = tokens + [tokenizer.pad_token_id] * (max_length - len(tokens))
-    attention_mask = [1] * len(tokens) + [0] * (max_length - len(tokens))
+    encoded = tokenizer(
+        mention,
+        padding="max_length",
+        truncation=True,
+        max_length=max_length,
+        return_tensors="pt"
+    )
     
     return {
-        'input_ids': torch.tensor([input_ids], dtype=torch.long),
-        'attention_mask': torch.tensor([attention_mask], dtype=torch.long)
+        'input_ids': encoded['input_ids'],
+        'attention_mask': encoded['attention_mask']
     }
 
 
