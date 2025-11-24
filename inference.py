@@ -111,7 +111,7 @@ def main():
     else:
         mention_embed = mention_embed.cpu().numpy().astype(np.float32)
     
-    _, candidate_idxs = faiss.faiss_index.search(mention_embed, cfg.inference.topk * 3)
+    _, candidate_idxs = faiss.faiss_index.search(mention_embed, cfg.inference.topk * 5)
     candidate_idxs = candidate_idxs[0]  # Get first (and only) query's results
     
     # Load dictionary CUIs
