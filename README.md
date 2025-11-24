@@ -108,12 +108,11 @@ python tokenizer.py
 | `--model_name_or_path` | str | `dmis-lab/biobert-base-cased-v1.1` | Path to model name or directory |
 | `--dictionary_path` | str | `./data/raw/train_dictionary.txt` | Path to dictionary file |
 | `--queries_dir` | str | `./data/raw/traindev` | Path to traindev folder |
-| `--dictionary_max_length` | int | 120 | Tokenizer padding/truncation length for dictionary |
-| `--queries_max_length` | int | 120 | Tokenizer padding/truncation length for queries |
-| `--test_split_percentage` | float | 0.8 | Fraction of traindev used for training |
 | `--skip_tokenizing_dictionary` | bool | False | Skip dictionary tokenization |
 | `--skip_tokenizing_queries` | bool | False | Skip query tokenization |
-| `--skip_split` | bool | False | Skip splitting traindev into train/test |
+| `--split_train_queries` | bool | False | Split traindev queries into train/test sets, you can control the percentage with `test_split_percentage` |
+| `--test_split_percentage` | float | 0.8 | Fraction of traindev queries used for training, you should --split_train_queries to use this argument |
+
 
 
 **Examples:**
@@ -121,7 +120,7 @@ python tokenizer.py
 - If you want to tokenize only specific dictionary that you have, you can execute
 
     ```bash
-        python tokenizer.py --dictionary_path='./path/to/dictionary.txt' --skip_tokenizing_queries --skip_split
+        python tokenizer.py --dictionary_path='./path/to/dictionary.txt' --skip_tokenizing_queries
     ```
 
 - After the process is finished, results would be saved in:
@@ -137,7 +136,7 @@ data/tokens/
  └── _dictionary_meta.json          ← dictionary metadata (containing shape of array)
 ```
 
-If --skip_split was not set, you will have also files for test dataset (test_queries_inp.mmap, test_queries_att.mmap, test_queries_cuis.npy, test_queries_meta.json)
+If --split_train_queries is set, you will have also files for test dataset (test_queries_inp.mmap, test_queries_att.mmap, test_queries_cuis.npy, test_queries_meta.json)
 
 
 ---
@@ -174,7 +173,6 @@ Training is handled by `train.py`.
 | `--hard_negatives_num` | ❌ | Hard negative samples per query, if set to 0, then no injection of hard negatives | 0 |
 | `--learning_rate` | ❌ | Learning rate | 5e-5 |
 | `--weight_decay` | ❌ | Weight decay | 0.001 |
-| `--loss_type` | ❌ | `marginal_nll` or `info_nce_loss` | `marginal_nll` |
 | `--build_faiss_batch_size` | ❌ | Batch size for building FAISS index | 4096 |
 | `--search_faiss_batch_size` | ❌ | Batch size for FAISS search | 4096 |
 | `--use_amp` | ❌ | Enable automatic mixed precision | True (if available) |
@@ -192,18 +190,6 @@ Training is handled by `train.py`.
 
 - At first, we check if any unfinished experiments exist, if yes we will restore checkpoint from this experiment, otherwise create a new experiment
 - The experiments metadata are saved in `./logs/logger_all.json`
-
-#### 2. Loss temperature warmup:
-- Each epoch dynamically calculates its own loss temperature based on the equation:
-
-```
-    cfg.train.loss_temperature = max(0.05, 0.15 * (0.88 ** (epoch - 1)))
-```
-
-Thus, if we have 10 epochs, we will have the loss temperatures:
-[0.17045454545454547, 0.15, 0.132, 0.11615999999999999, 0.10222079999999999, 0.089954304, 0.07915978752, 0.0696606130176, 0.061301339455488, 0.05394517872082944]
-
-This lowers gradually the temperature, stabilizing early learning.
 
 
 #### 3. Each epoch workflow:
@@ -242,7 +228,7 @@ Each epoch executes the following pipeline:
     - Train loop will do in batches:
         - Query and candidate tokens are being embedded and normalized
         - Compute cosine similarity using torch.bmm between the query embeding and its candidates
-        - Calculate loss (marginal_nll or info_nce_loss) and divide it by loss_temperature of the epoch
+        - Calculate loss (marginal_nll) and divide it by loss_temperature of the epoch
         - backward pass and optimization using AdamW optimizer and scheduler
 
 6. **Calculate metrics**:
