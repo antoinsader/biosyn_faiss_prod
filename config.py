@@ -140,7 +140,6 @@ class TrainingConfig:
     weight_decay: float = 0.001
     num_workers: int = 8
     topk: int = 20
-    loss_type: str = "marginal_nll" # info_nce_loss
     optimizer_name: str = "AdamW" # Adam
     use_amp: bool = True
     loss_temperature: float = 0.06
@@ -323,7 +322,6 @@ def train_parse_args():
 
     parser.add_argument('--learning_rate', help='train learning rate', type=float, required=False)
     parser.add_argument('--weight_decay', help='train weight decay', type=float, required=False)
-    parser.add_argument('--loss_type', help='Either marginal_nll or info_nce_loss', type=str, required=False)
     
 
     parser.add_argument('--build_faiss_batch_size', help='Batch size when building faiss index ', type=int, required=False)
@@ -374,9 +372,6 @@ def train_parse_args():
         cfg.train.learning_rate = args.learning_rate
     if args.weight_decay:
         cfg.train.weight_decay = args.weight_decay
-    if args.loss_type:
-        assert args.loss_type in ['marginal_nll','info_nce_loss']
-        cfg.train.loss_type = args.loss_type
     if args.build_faiss_batch_size:
         cfg.faiss.build_batch_size = args.build_faiss_batch_size
     if args.search_faiss_batch_size:

@@ -1,5 +1,6 @@
 
-# python train.py --training_log_name='minimzed dictionary' --use_small_dictionary --force_ivfpq
+# python train.py --training_log_name='minimzed dictionary' --use_small_dictionary --force_ivfpq --hard_positives_num=1 --hard_negatives_num=9
+
 
 
 import logging
@@ -57,13 +58,13 @@ class Trainer:
 
 
 
-    def train_one_batch(self, data_loader_item, return_scores=False):
+    def train_one_batch(self, data_loader_item):
         """
             What we will do in one batch is:
                 - extracting batch_x, batch_y from the dataloader item
                 - Extract batch_query_tokens, batch_candidates_tokens from batch_x
                 - Forward pass in the reranker and getting scores. (scores shape is batch_size, topk which is cosine similarity between each query and its candidates)
-                - we calculate the loss based on the scores, we use either marginal_nll (better in our case) or info_nce_loss
+                - we calculate the loss based on the scores, we use marginal_nll 
                 - We do backpropogation, scale, optimize, update and step
                 - We calculate accuracy and mrr metrics for the batch
         """
@@ -83,13 +84,8 @@ class Trainer:
         self.scaler.update()
         self.scheduler.step()
 
-
-
-        # Calculate metrics less frequently to reduce overhead
-        # Only compute every 100 batches or return zeros
-        if return_scores:
-            return loss.detach(), batch_scores.detach()
-        return loss.detach()
+        accuracy_5, mrr, batch_margin = compute_metrics(batch_scores, batch_y, k=5)
+        return loss.detach(), accuracy_5, mrr, batch_margin
 
 
 
@@ -152,42 +148,24 @@ class Trainer:
             prefetch_factor=2 if self.cfg.train.num_workers > 0 else None  # Prefetch 2 batches per worker
         )
         batches_train_start_time = time.time()
-        epoch_loss = torch.tensor(0.0, device=self.device)
-        epoch_accuracy_5 = torch.tensor(0.0, device=self.device)
-        epoch_mrr = torch.tensor(0.0, device=self.device)
-        epoch_margin = torch.tensor(0.0, device=self.device)
+        epoch_loss, epoch_accuracy_5, epoch_mrr, epoch_margin = 0.0, 0.0, 0.0, 0.0
         n_batches = 0
-        n_metric_samples = 0  # Count how many times we compute metrics
-
 
         for i, data_loader_item in tqdm(enumerate(my_loader), total=len(my_loader), desc=f"epoch@{epoch} - Training batches"):
-            # Compute metrics every 100 batches to reduce overhead
-            compute_metrics_now = (i % 100 == 0 or i == len(my_loader) - 1)
+            loss, accuracy_5, mrr, batch_margin = self.train_one_batch(data_loader_item)
             
-            if compute_metrics_now:
-                loss, batch_scores = self.train_one_batch(data_loader_item, return_scores=True)
-                # batch_y is the second element of data_loader_item
-                _, batch_y = data_loader_item
-                
-                # We need to ensure batch_y is on the correct device if it isn't already handled by compute_metrics
-                # compute_metrics handles device transfer for targets now, so we can pass as is
-                
-                accuracy_5, mrr, batch_margin = compute_metrics(batch_scores, batch_y, k=5)
-                epoch_accuracy_5 += accuracy_5
-                epoch_mrr += mrr
-                epoch_margin += batch_margin
-                n_metric_samples += 1
-            else:
-                loss = self.train_one_batch(data_loader_item, return_scores=False)
-                
             epoch_loss += loss
+            epoch_accuracy_5 += accuracy_5
+            epoch_mrr += mrr
+            epoch_margin += batch_margin
             n_batches += 1
 
 
         avg_loss = (epoch_loss / max(1, n_batches)).item()
-        avg_mrr = (epoch_mrr / max(1, n_metric_samples)).item()
-        avg_accuracy_5 = (epoch_accuracy_5 / max(1, n_metric_samples)).item()
-        avg_margin = (epoch_margin / max(1, n_metric_samples)).item()  # Average
+        avg_mrr = (epoch_mrr / max(1, n_batches)).item()
+        avg_accuracy_5 = (epoch_accuracy_5 / max(1, n_batches)).item()
+        avg_margin = (epoch_margin / max(1, n_batches)).item()  # Average
+
         self.logger.log_event(
             "Epoch summary",
             message=f"Epoch average loss={avg_loss:.3f}, average margin={avg_margin:.4f}, average mrr={avg_mrr:.4f}, average accuracy@5={avg_accuracy_5:.4f}.   loss_temp={self.cfg.train.loss_temperature:.3f}",
@@ -258,7 +236,7 @@ class Trainer:
         for epoch in range(start_epoch, self.cfg.train.num_epochs + 1):
             if self.use_cuda:
                 torch.cuda.reset_peak_memory_stats()
-            self.cfg.train.loss_temperature = max(0.05, 0.15 * (0.88 ** (epoch - 1)))
+            # self.cfg.train.loss_temperature = max(0.05, 0.15 * (0.88 ** (epoch - 1)))
 
             avergae_loss, average_mrr, average_accuracy_5, last_faiss_recall = self.train_one_epoch(epoch)
             if self.cfg.train.save_checkpoints:

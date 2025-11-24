@@ -172,7 +172,6 @@ Training is handled by `train.py`.
 | `--hard_negatives_num` | ❌ | Hard negative samples per query, if set to 0, then no injection of hard negatives | 0 |
 | `--learning_rate` | ❌ | Learning rate | 5e-5 |
 | `--weight_decay` | ❌ | Weight decay | 0.001 |
-| `--loss_type` | ❌ | `marginal_nll` or `info_nce_loss` | `marginal_nll` |
 | `--build_faiss_batch_size` | ❌ | Batch size for building FAISS index | 4096 |
 | `--search_faiss_batch_size` | ❌ | Batch size for FAISS search | 4096 |
 | `--use_amp` | ❌ | Enable automatic mixed precision | True (if available) |
@@ -228,7 +227,7 @@ Each epoch executes the following pipeline:
     - Train loop will do in batches:
         - Query and candidate tokens are being embedded and normalized
         - Compute cosine similarity using torch.bmm between the query embeding and its candidates
-        - Calculate loss (marginal_nll or info_nce_loss) and divide it by loss_temperature of the epoch
+        - Calculate loss (marginal_nll) and divide it by loss_temperature of the epoch
         - backward pass and optimization using AdamW optimizer and scheduler
 
 6. **Calculate metrics**:

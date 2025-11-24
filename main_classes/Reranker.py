@@ -4,7 +4,7 @@ import torch.optim as optim
 
 
 from config import  GlobalConfig
-from helpers.utils import  info_nce_loss, marginal_nll
+from helpers.utils import  marginal_nll
 from main_classes.MyEncoder import MyEncoder
 
 # =======================
@@ -24,7 +24,7 @@ class Reranker(nn.Module):
 
         self.cfg = cfg.train
         self.encoder = encoder
-        self.criterion = info_nce_loss if self.cfg.loss_type == 'info_nce_loss' else marginal_nll
+        self.criterion =  marginal_nll
 
         self.use_cuda = torch.cuda.is_available()
         self.device = "cuda" if self.use_cuda else "cpu"

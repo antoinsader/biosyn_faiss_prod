@@ -204,8 +204,11 @@ class MyFaiss():
                 embs = embs.cpu().numpy().astype(np.float32)
 
             _, chunk_cand_idxs = faiss_index.search(embs, self.topk)
-
-            candidates[start:end] = chunk_cand_idxs.cpu().detach().numpy()
+            if self.use_cuda:
+                candidates[start:end] = chunk_cand_idxs.cpu().detach().numpy()
+            else:
+                candidates[start:end] = chunk_cand_idxs
+            
             del inp, att, embs
         del query_inputs, query_att
         gc.collect()
