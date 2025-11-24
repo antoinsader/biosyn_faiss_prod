@@ -167,8 +167,8 @@ Training is handled by `train.py`.
 | `--num_epochs` | ❌ | Number of epochs | 10 |
 | `--train_batch_size` | ❌ | Batch size | 16 |
 | `--topk` | ❌ | Number of retrieved candidates per query | 20 |
-| `--hard_positives_num` | ❌ | Hard positive samples per query | 2 |
-| `--hard_negatives_num` | ❌ | Hard negative samples per query | 7 |
+| `--hard_positives_num` | ❌ | Hard positive samples per query, if set to 0, then no injection of hard positives | 0 |
+| `--hard_negatives_num` | ❌ | Hard negative samples per query, if set to 0, then no injection of hard negatives | 0 |
 | `--learning_rate` | ❌ | Learning rate | 5e-5 |
 | `--weight_decay` | ❌ | Weight decay | 0.001 |
 | `--loss_type` | ❌ | `marginal_nll` or `info_nce_loss` | `marginal_nll` |

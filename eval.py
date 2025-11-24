@@ -31,8 +31,8 @@ class Evaluator:
         cfg.model.model_name = self.encoder_dir
 
         
-        cfg.train.inject_hard_negatives = False
-        cfg.train.inject_hard_positives = False
+        cfg.train.inject_hard_negatives_candidates = False
+        cfg.train.inject_hard_positives_candidates = False
 
         self.tokens_paths = TokensPaths(cfg, dictionary_key="dictionary", queries_key='test_queries')
 
@@ -82,7 +82,7 @@ class Evaluator:
                 batch_pred = self.model(query_tokens, candidate_tokens)  # [batch_size, hidden_size]
                 loss = self.model.get_loss(batch_pred, batch_y)
 
-                res = self._compute_metrics_eval(batch_pred.detach().cpu(), batch_y.cpu(), multiple_ks=[1, 2,4, 5, 7, 10, 12, 15, 17, 20])
+                res = self._compute_metrics_eval(batch_pred.detach(), batch_y, multiple_ks=[1, 2,4, 5, 7, 10, 12, 15, 17, 20])
                 res["loss"] = loss.item()
                 all_metrics.append(res)
                 total_samples += batch_size
@@ -103,7 +103,7 @@ class Evaluator:
 
         self.logger.log_event(
             event_tag="Evaluation  accuracy results",
-            message=acc_results,
+            message="\n".join(acc_results),
             log_memory=False
         )
 
