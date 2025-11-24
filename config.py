@@ -21,6 +21,7 @@ class PathsConfig:
     
     dictionary_raw_path = "./data/raw/train_dictionary.txt"
     queries_raw_dir = "./data/raw/traindev"
+    test_queries_raw_dir = "./data/raw/test"
     tokenizer_meta_path = "./data/tokenizer.json"
 
     result_encoder_dir = None
@@ -72,6 +73,7 @@ class TokensConfig:
 
     skip_tokenize_dictionary: bool = False
     skip_tokenize_queries: bool = False
+    skip_tokenizing_test_queries :bool=False
     split_train_queries :bool=False
     test_split_percentage: float = 0.8
 
@@ -210,6 +212,7 @@ def tokenizer_parse_args():
 
     parser.add_argument('--dictionary_path',  type=str)
     parser.add_argument('--queries_dir',  type=str)
+    parser.add_argument('--test_queries_dir',  type=str)
 
 
     parser.add_argument('--split_train_queries',  action="store_true")
@@ -221,6 +224,7 @@ def tokenizer_parse_args():
 
     parser.add_argument('--skip_tokenizing_dictionary',  action="store_true")
     parser.add_argument('--skip_tokenizing_queries',  action="store_true")
+    parser.add_argument('--skip_tokenizing_test_queries',  action="store_true")
 
     args = parser.parse_args()
 
@@ -232,6 +236,8 @@ def tokenizer_parse_args():
         cfg.tokenize.skip_tokenize_dictionary = True
     if args.skip_tokenizing_queries:
         cfg.tokenize.skip_tokenize_queries = True
+    if args.skip_tokenizing_test_queries:
+        cfg.tokenize.skip_tokenize_test_queries = True
     
     if args.dictionary_path:
         assert os.path.exists(args.dictionary_path), f'Dict path: {args.dictionary_path} not exists'
@@ -240,6 +246,10 @@ def tokenizer_parse_args():
     if args.queries_dir:
         assert os.path.isdir(args.queries_dir), f'Queries dir: {args.queries_dir} not exists'
         cfg.paths.queries_raw_dir = args.queries_dir
+
+    if args.test_queries_dir:
+        assert os.path.isdir(args.test_queries_dir), f'Test queries dir: {args.test_queries_dir} not exists'
+        cfg.paths.test_queries_raw_dir = args.test_queries_dir
 
     if args.queries_max_length:
         cfg.tokenize.queries_max_length = args.queries_max_length

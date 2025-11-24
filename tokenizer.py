@@ -86,7 +86,7 @@ def split_queries(cfg: GlobalConfig, train_queries_key='train_queries', test_que
     train_n = len(train_cuis)
     assert train_n == train_shape[0], f"train shape: {train_shape} is not the same as train_n: {train_n}"
 
-    split_idx = int(train_n * cfg.tokenize.test_split_percentage)
+    split_idx = int(train_n * ( 1- cfg.tokenize.test_split_percentage) )
 
     random_rng = np.random.default_rng(seed=42)
     shuffled_random_indices = random_rng.permutation(train_n)
@@ -203,6 +203,26 @@ if __name__=="__main__":
         meta = {"shape": (len(dictionary_cuis), dictionary_max_length)}
         with open(tokens_paths.dictionary_meta  , "w") as f:
             json.dump(meta, f)
+
+
+    if not cfg.tokenize.skip_tokenize_test_queries:
+
+        print(f"Reading test queries...")
+        test_tokens_paths = TokensPaths(cfg, dictionary_key='dictionary', queries_key='test_queries')
+
+
+        test_queries = load_queries(cfg.paths.queries_raw_dir)
+        test_queries_cuis = [q[1] for q in test_queries]
+        test_queries_names = [q[0] for q in test_queries]
+        np.save(test_tokens_paths.queries_cuis_path, test_queries_cuis)
+
+        tokenize_names(test_queries_names, test_tokens_paths.queries_input_ids_path, test_tokens_paths.queries_attention_mask_path, max_length=queries_max_length)
+
+        meta = {"shape": (len(queries_cuis), queries_max_length)}
+        with open(tokens_paths.queries_meta  , "w") as f:
+            json.dump(meta, f)
+
+
 
     if cfg.tokenize.split_train_queries:
         split_queries(cfg, 'train_queries', 'test_queries')

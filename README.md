@@ -108,10 +108,11 @@ python tokenizer.py
 | `--model_name_or_path` | str | `dmis-lab/biobert-base-cased-v1.1` | Path to model name or directory |
 | `--dictionary_path` | str | `./data/raw/train_dictionary.txt` | Path to dictionary file |
 | `--queries_dir` | str | `./data/raw/traindev` | Path to traindev folder |
+| `--test_queries_dir` | str | `./data/raw/test` | Path to test folder, if you don't have it, you can use `--split_train_queries` to split traindev into train/test sets |
 | `--skip_tokenizing_dictionary` | bool | False | Skip dictionary tokenization |
 | `--skip_tokenizing_queries` | bool | False | Skip query tokenization |
-| `--split_train_queries` | bool | False | Split traindev queries into train/test sets, you can control the percentage with `test_split_percentage` |
-| `--test_split_percentage` | float | 0.8 | Fraction of traindev queries used for training, you should --split_train_queries to use this argument |
+| `--split_train_queries` | bool | False | Split traindev queries into train/test sets, you can control the percentage with `test_split_percentage`, in case you don't have test_queries_dir |
+| `--test_split_percentage` | float | 0.2 | Fraction of traindev queries used for training, you should --split_train_queries to use this argument |
 
 
 
@@ -123,8 +124,26 @@ python tokenizer.py
         python tokenizer.py --dictionary_path='./path/to/dictionary.txt' --skip_tokenizing_queries
     ```
 
-- After the process is finished, results would be saved in:
+**Testing set:**
+It is either you have a test folder, or you can use `--split_train_queries` to split traindev into train/test sets
+if you have a test folder, you can execute:
 
+    ```bash
+        python tokenizer.py --test_queries_dir='./path/to/test' --skip_tokenizing_dictionary --skip_tokenizing_queries
+    ```
+
+If you want to split traindev into train/test sets, you can execute:
+
+    ```bash
+        python tokenizer.py --split_train_queries --test_split_percentage=0.2 --skip_tokenizing_dictionary --skip_tokenizing_queries
+    ```
+
+
+
+**Output:**
+
+
+- After the process is finished, results would be saved in:
 ```
 data/tokens/
  ├── _dictionary_inp.mmap      ← dictionary input_ids
