@@ -82,8 +82,9 @@ class TokensConfig:
     split_train_queries :bool=False
     test_split_percentage: float = 0.2
 
+    
 
-
+    dictionary_annotation_add_synonyms: bool = False
 
     query_tokens_window_words_in_text = 10 #5 words before mention start, 5 words after mention start
     special_tokens = {"additional_special_tokens": ["[MS]", "[ME]"]}
@@ -236,6 +237,9 @@ def tokenizer_parse_args():
     parser.add_argument('--skip_tokenizing_dictionary',  action="store_true")
     parser.add_argument('--skip_tokenizing_queries',  action="store_true")
     parser.add_argument('--skip_tokenizing_test_queries',  action="store_true")
+    
+    
+    parser.add_argument('--dictionary_annotation_add_synonyms',  action="store_true")
 
     args = parser.parse_args()
 
@@ -271,6 +275,10 @@ def tokenizer_parse_args():
         cfg.tokenize.split_train_queries = True
         assert 0.0 <= args.test_split_percentage <= 1.0 
         cfg.tokenize.test_split_percentage = args.test_split_percentage
+
+
+    if args.dictionary_annotation_add_synonyms:
+        cfg.tokenize.dictionary_annotation_add_synonyms = True
 
 
     return cfg

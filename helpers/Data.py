@@ -481,7 +481,7 @@ def load_dictionary_old(dictionary_path, dictionary_max_chars_length, special_to
     data = np.array(data)
     return data
 
-def load_dictionary(dictionary_path, dictionary_max_chars_length, special_token_start="[MS]" , special_token_end="[ME]"):
+def load_dictionary(dictionary_path, dictionary_max_chars_length, special_token_start="[MS]" , special_token_end="[ME]", add_synonyms=False):
 
     cui_to_names_set = defaultdict(set)
     pre_data = []
@@ -509,15 +509,20 @@ def load_dictionary(dictionary_path, dictionary_max_chars_length, special_token_
     
     sep = " ; "
     for cui,name in tqdm(pre_data, desc="annotating dictionary"):
-        syns = [s for s in cui_to_names[cui] if s != name]
-        num_syns = min(len(syns), syns_k)
-        syns_str = ""
-        if num_syns > 0:
-            if num_syns < len(syns):
-                syns = random.sample(syns, num_syns)
-            syns_str = sep + sep.join(syns)
+        if add_synonyms:
+            syns = [s for s in cui_to_names[cui] if s != name]
+            num_syns = min(len(syns), syns_k)
+            syns_str = ""
+            if num_syns > 0:
+                if num_syns < len(syns):
+                    syns = random.sample(syns, num_syns)
+                syns_str = sep + sep.join(syns)
 
-        name_annotated = f"{special_token_start} {name} {special_token_end} {syns_str}"
+            name_annotated = f"{special_token_start} {name} {special_token_end} {syns_str}"
+    
+        else:
+            name_annotated = f"{special_token_start} {name} {special_token_end}"
+    
         # data.append((name, cui, name_annotated))
         names_list.append(name)
         cuis_list.append(cui)

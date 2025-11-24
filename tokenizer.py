@@ -5,7 +5,7 @@ from tqdm import tqdm
 import numpy as np
 import json
 
-
+import torch 
 from datasets import Dataset
 from transformers import AutoTokenizer
 
@@ -14,8 +14,8 @@ from config import GlobalConfig, tokenizer_parse_args
 from helpers.Data import TokensPaths, load_queries, load_dictionary
 
 
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-os.environ["TOKENIZERS_NUM_THREADS"] = str(min(8, os.cpu_count() or 8))
+# os.environ["TOKENIZERS_PARALLELISM"] = "false"
+# os.environ["TOKENIZERS_NUM_THREADS"] = str(min(8, os.cpu_count() or 8))
 
 
 def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, max_length, batch_size, tokenizer):
@@ -27,7 +27,7 @@ def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, ma
         lambda e: tokenizer(e["text"], padding="max_length", truncation=True, max_length=max_length),
         batched=True,
         batch_size=20_000,
-        num_proc=os.cpu_count()
+        num_proc=  os.cpu_count() if torch.cuda.is_available() else 1  
     )
     print(f"Finished tokenizing, saving..")
 
@@ -240,7 +240,7 @@ if __name__=="__main__":
             special_token_end=mention_end_special_token,
             tokenizer=tokenizer)
 
-        queries_names = [q[0] for q in train_queries]
+        # queries_names = [q[0] for q in train_queries]
         queries_cuis = [q[1] for q in train_queries]
         queries_sentences = [q[2] for q in train_queries]
         np.save(tokens_paths.queries_cuis_path, queries_cuis)
@@ -293,7 +293,7 @@ if __name__=="__main__":
             special_token_end=mention_end_special_token,
             tokenizer=tokenizer)
 
-        test_queries_names = [q[0] for q in test_queries]
+        # test_queries_names = [q[0] for q in test_queries]
         test_queries_cuis = [q[1] for q in test_queries]
         test_queries_sentences = [q[2] for q in test_queries]
         np.save(test_tokens_paths.queries_cuis_path, test_queries_cuis)
