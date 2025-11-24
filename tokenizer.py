@@ -14,7 +14,7 @@ from config import GlobalConfig, tokenizer_parse_args
 from helpers.Data import TokensPaths, load_queries, load_dictionary
 
 
-os.environ["TOKENIZERS_PARALLELISM"] = "true"
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 os.environ["TOKENIZERS_NUM_THREADS"] = str(min(8, os.cpu_count() or 8))
 
 
@@ -22,7 +22,17 @@ def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, ma
     batch_size = cfg.tokenize.tokenize_batch_size
     N = len(names)
 
+    print(f"Tokenizing...")
+    dataset = Dataset.from_dict({"text": names})
+    tokenized = dataset.map(
+        lambda e: tokenizer(e["text"], padding="max_length", truncation=True, max_length=max_length),
+        batched=True,
+        batch_size=20_000,
+        num_proc=os.cpu_count()
+    )
 
+
+    
     input_ids_mmap = np.memmap(
         input_ids_memmap_path,
         mode="w+",
@@ -37,13 +47,6 @@ def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, ma
         shape=(N, max_length)
     )
 
-    print(f"Tokenizing...")
-    dataset = Dataset.from_dict({"text": names})
-    tokenized = dataset.map(
-        lambda e: tokenizer(e["text"], padding="max_length", truncation=True, max_length=max_length),
-        batched=True,
-        num_proc=min(8, os.cpu_count())
-    )
     print(f"Finished tokenizing, saving..")
 
     for start in tqdm(range(0, N, batch_size), desc=f"Saving tokens"):
@@ -56,6 +59,8 @@ def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, ma
     input_ids_mmap.flush()
     att_mask_mmap.flush()
 
+    return (N, max_length)
+    
 def split_queries(cfg: GlobalConfig, train_queries_key='train_queries', test_queries_key='test_queries'):
     token_groups =  cfg.paths.get_default_token_groups()
     train_queries_paths = token_groups[train_queries_key]
