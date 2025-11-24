@@ -199,13 +199,15 @@ class Trainer:
         return chkpt["epoch"] + 1
 
     def save_checkpoint(self,epoch):
+        model_state = {
+            "encoder": self.model.encoder.get_state_dict(),
+        }
+        if self.model.encoder.projection is not None:
+             model_state["projection"] = self.model.encoder.projection.state_dict()
+
         ckpt = {
             "epoch": epoch,
-            "model_state": 
-            {
-                "encoder": self.model.encoder.get_state_dict(),
-                "projection": self.model.encoder.projection.state_dict(),
-            },
+            "model_state": model_state,
             
             "optimizer_state": self.model.optimizer.state_dict(),
             "scheduler_state": self.scheduler.state_dict(),

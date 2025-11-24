@@ -2,6 +2,15 @@ import argparse
 from dataclasses import dataclass, field
 import math
 import os
+from enum import Enum
+
+
+class EncodingType(str, Enum):
+    CLS_ONLY = "cls_only"
+    BETWEEN_SPANS = "between_spans"
+    SPANS_ONLY = "spans_only"
+    CLS_AND_BETWEEN_SPANS = "cls_and_between_spans"
+    CLS_AND_SPANS = "cls_and_spans"
 
 
 
@@ -132,7 +141,7 @@ class ModelConfig:
     pooling : str =  'hybrid' #[mean, cls, hybrid]
     normalize: bool = True
     hidden_size: int = 768
-    encoding_type : str = "cls_and_between_spans" # [cls_only, between_spans, spans_only, cls_and_between_spans, cls_and_spans]
+    encoding_type : EncodingType = EncodingType.CLS_AND_BETWEEN_SPANS
 
 
 @dataclass

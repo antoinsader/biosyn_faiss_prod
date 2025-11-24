@@ -5,7 +5,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 from transformers import AutoModel
 
-from config import GlobalConfig
+from config import GlobalConfig, EncodingType
 
 
 
@@ -49,9 +49,11 @@ class MyEncoder():
         self.hidden_size = self.encoder.config.hidden_size
         self.cfg.hidden_size = self.hidden_size
 
-        # This is new because now I want to project the embeding of [cls] and the embeding of the spans mean [ms] + [me] / 2 into 786 vector 
-        self.projection = nn.Linear(self.hidden_size * 2, self.hidden_size)
-        self.projection.to(self.device)
+        # Initialize projection only if needed
+        self.projection = None
+        if self.cfg.encoding_type in [EncodingType.CLS_AND_BETWEEN_SPANS, EncodingType.CLS_AND_SPANS]:
+            self.projection = nn.Linear(self.hidden_size * 2, self.hidden_size)
+            self.projection.to(self.device)
 
     def get_emb(self, input_ids_tensor, attention_mask_tensor, use_amp=False, use_no_grad=False):
         """
@@ -75,43 +77,67 @@ class MyEncoder():
             # extract [cls]
             cls_emb =  last_hidden_state[:, 0, :]
 
-            # extract span
-            batch_size, seq_len, _ = last_hidden_state.size()
-            
-            # Create range tensor for masking
-            # (1, seq_len)
-            seq_range = torch.arange(seq_len, device=self.device).unsqueeze(0)
-            
             # Find start and end indices
-            # We assume there is exactly one start and one end token per sequence as per original code assertions
             # (batch_size, )
             mention_start_indices = (input_ids_tensor == self.mention_start_token_id).float().argmax(dim=1)
             mention_end_indices = (input_ids_tensor == self.mention_end_token_id).float().argmax(dim=1)
-            
-            # Create mask: start < index < end
-            # (batch_size, seq_len)
-            mask = (seq_range > mention_start_indices.unsqueeze(1)) & (seq_range < mention_end_indices.unsqueeze(1))
-            
-            # Compute mean
-            # (batch_size, seq_len, 1)
-            mask_expanded = mask.unsqueeze(-1).float()
-            
-            # Sum of embeddings in span
-            # (batch_size, hidden)
-            sum_embs = (last_hidden_state * mask_expanded).sum(dim=1)
-            
-            # Count of tokens in span
-            # (batch_size, 1)
-            counts = mask_expanded.sum(dim=1)
-            
-            # Avoid division by zero (though assertions in original imply valid spans)
-            counts = torch.clamp(counts, min=1.0)
-            
-            span_embs = sum_embs / counts
 
+            embs = None
 
-            combined_embs = torch.cat((cls_emb, span_embs), dim=1)
-            embs = self.projection(combined_embs)
+            if self.cfg.encoding_type == EncodingType.CLS_ONLY:
+                embs = cls_emb
+
+            elif self.cfg.encoding_type == EncodingType.BETWEEN_SPANS or self.cfg.encoding_type == EncodingType.CLS_AND_BETWEEN_SPANS:
+                # extract span between [MS] and [ME]
+                batch_size, seq_len, _ = last_hidden_state.size()
+                
+                # Create range tensor for masking
+                seq_range = torch.arange(seq_len, device=self.device).unsqueeze(0)
+                
+                # Create mask: start < index < end
+                mask = (seq_range > mention_start_indices.unsqueeze(1)) & (seq_range < mention_end_indices.unsqueeze(1))
+                
+                # Compute mean
+                mask_expanded = mask.unsqueeze(-1).float()
+                sum_embs = (last_hidden_state * mask_expanded).sum(dim=1)
+                counts = mask_expanded.sum(dim=1)
+                counts = torch.clamp(counts, min=1.0)
+                span_embs = sum_embs / counts
+
+                if self.cfg.encoding_type == EncodingType.BETWEEN_SPANS:
+                    embs = span_embs
+                else: # CLS_AND_BETWEEN_SPANS
+                    combined_embs = torch.cat((cls_emb, span_embs), dim=1)
+                    embs = self.projection(combined_embs)
+
+            elif self.cfg.encoding_type == EncodingType.SPANS_ONLY or self.cfg.encoding_type == EncodingType.CLS_AND_SPANS:
+                # Extract embeddings of [MS] and [ME] tokens
+                # gather expects index to have same dims as input except on gathered dim
+                # last_hidden_state: (batch, seq, hidden)
+                # indices: (batch, ) -> (batch, 1, hidden)
+                
+                # We need to gather along dim 1 (seq_len)
+                # indices must be (batch, 1, hidden) to gather (batch, seq, hidden) ?? No.
+                # torch.gather(input, dim, index)
+                # index should have same number of dims.
+                
+                # Easier way:
+                # mention_start_indices: (batch,)
+                # We want to select specific sequence indices for each batch element.
+                # last_hidden_state[torch.arange(batch_size), mention_start_indices] works
+                
+                batch_indices = torch.arange(last_hidden_state.size(0), device=self.device)
+                ms_embs = last_hidden_state[batch_indices, mention_start_indices]
+                me_embs = last_hidden_state[batch_indices, mention_end_indices]
+                
+                # Mean of [MS] and [ME]
+                spans_mean_embs = (ms_embs + me_embs) / 2.0
+
+                if self.cfg.encoding_type == EncodingType.SPANS_ONLY:
+                    embs = spans_mean_embs
+                else: # CLS_AND_SPANS
+                    combined_embs = torch.cat((cls_emb, spans_mean_embs), dim=1)
+                    embs = self.projection(combined_embs)
 
             if self.cfg.normalize:
                 embs = F.normalize(embs, p=2, dim=1)
@@ -141,7 +167,8 @@ class MyEncoder():
         os.makedirs(dir, exist_ok=True)
         self.encoder.save_pretrained(dir)
         
-        torch.save(self.projection.state_dict(), os.path.join(dir, "projection.pth"))
+        if self.projection is not None:
+            torch.save(self.projection.state_dict(), os.path.join(dir, "projection.pth"))
                 
         with open(os.path.join(dir, "tokenizer_meta.json"), "w") as f:
             json.dump(self.tokenizer_meta, f)
@@ -158,7 +185,8 @@ class MyEncoder():
         if isinstance(state, dict):
             # Loading from checkpoint dictionary (during training)
             self.encoder.load_state_dict(state['encoder'])
-            self.projection.load_state_dict(state['projection'])
+            if self.projection is not None and 'projection' in state:
+                self.projection.load_state_dict(state['projection'])
         else:
             # Loading from saved model directory (during eval/inference)
             assert isinstance(state, str), "state must be either dict or str"
@@ -168,10 +196,13 @@ class MyEncoder():
             loaded_encoder = AutoModel.from_pretrained(state, use_safetensors=True)
             self.encoder.load_state_dict(loaded_encoder.state_dict())
             
-            # Load projection weights
-            projection_path = os.path.join(state, "projection.pth")
-            assert os.path.exists(projection_path), f"Projection file not found: {projection_path}"
-            self.projection.load_state_dict(torch.load(projection_path, map_location=self.device))
+            # Load projection weights if needed
+            if self.projection is not None:
+                projection_path = os.path.join(state, "projection.pth")
+                if os.path.exists(projection_path):
+                    self.projection.load_state_dict(torch.load(projection_path, map_location=self.device))
+                else:
+                    print(f"Warning: Projection file not found at {projection_path}, but projection layer is initialized.")
 
 
     def get_state_dict(self):

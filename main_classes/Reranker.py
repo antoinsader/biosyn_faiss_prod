@@ -31,8 +31,12 @@ class Reranker(nn.Module):
 
         assert self.cfg.optimizer_name == 'AdamW', f'Currently only AdamW available'
 
+        params = list(self.encoder.encoder.parameters())
+        if self.encoder.projection is not None:
+            params += list(self.encoder.projection.parameters())
+
         self.optimizer = optim.AdamW(
-            list(self.encoder.encoder.parameters()) + list(self.encoder.projection.parameters()),
+            params,
             lr=self.cfg.learning_rate,
             weight_decay=self.cfg.weight_decay,
             fused=self.use_cuda
