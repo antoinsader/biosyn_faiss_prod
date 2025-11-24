@@ -92,8 +92,8 @@ def main():
         tokens_paths=tokens_paths,
         encoder=encoder
     )
-    # faiss.load_faiss_index(cfg.paths.faiss_path)
-    faiss.build_faiss(cfg.faiss.build_batch_size)
+    faiss.load_faiss_index(cfg.paths.faiss_path)
+    # faiss.build_faiss(cfg.faiss.build_batch_size)
     # Search FAISS
     print(f"Searching for top-{cfg.inference.topk} candidates...")
     if use_cuda:

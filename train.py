@@ -261,7 +261,7 @@ class Trainer:
 
         self.encoder.save_state(self.result_encoder_dir)
         self.save_checkpoint(epoch='last')
-
+        self.faiss.save_index()
         self.logger.log_event("Train finished", t0=full_train_start_time, log_memory=False)
         self.logger.log_event("Main info: " , message=self.checkpointing.current_experiment, log_memory=False)
 
