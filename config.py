@@ -300,7 +300,7 @@ def train_parse_args():
 
 
     # optional
-    parser.add_argument('--encoder_model_name',
+    parser.add_argument('--model_name_or_path',
                         help='Directory for pretrained model', required=False)
     
     parser.add_argument('--use_small_dictionary', help='In case you minimized and want to use the small dictionar', action='store_true')
@@ -332,8 +332,8 @@ def train_parse_args():
     if args.training_log_name:
         cfg.logger.train_log_name = args.training_log_name
 
-    if args.encoder_model_name:
-        cfg.model.model_name = args.encoder_model_name
+    if args.model_name_or_path:
+        cfg.model.model_name = args.model_name_or_path
 
     if args.num_epochs:
         assert  8 <= args.num_epochs < 25, f'Num epochs should be between 8 and 25'

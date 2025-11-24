@@ -166,7 +166,7 @@ Training is handled by `train.py`.
 | Argument | Required | Description | Default |
 |-----------|-----------|-------------|----------|
 | `--training_log_name` | ✅ | Unique name for the experiment | N/A |
-| `--encoder_model_name` | ❌ | Pretrained model name or directory | `dmis-lab/biobert-base-cased-v1.1` |
+| `--model_name_or_path` | ❌ | Pretrained model name or directory | `dmis-lab/biobert-base-cased-v1.1` |
 | `--num_epochs` | ❌ | Number of epochs | 10 |
 | `--train_batch_size` | ❌ | Batch size | 16 |
 | `--topk` | ❌ | Number of retrieved candidates per query | 20 |
