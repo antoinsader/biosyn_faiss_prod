@@ -38,6 +38,7 @@ class MyEncoder():
     
         with open(tokenizer_meta_path) as f:
             tokenizer_meta = json.load(f)
+        self.tokenizer_meta = tokenizer_meta
         tokenizer_len = tokenizer_meta['len_tokenizer']
         encoder.resize_token_embeddings(tokenizer_len)
         self.mention_start_token_id = tokenizer_meta["mention_start_token_id"]
@@ -136,9 +137,15 @@ class MyEncoder():
         """
         This is used at checkpointing where after each epoch, we are saving the state of the encoder
         """
+
         os.makedirs(dir, exist_ok=True)
         self.encoder.save_pretrained(dir)
+        
         torch.save(self.projection.state_dict(), os.path.join(dir, "projection.pth"))
+                
+        with open(os.path.join(dir, "tokenizer_meta.json"), "w") as f:
+            json.dump(self.tokenizer_meta, f)
+
         return True
 
     def load_state(self, state):

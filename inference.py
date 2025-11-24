@@ -27,13 +27,17 @@ def load_dictionary_names(dictionary_path='./data/raw/train_dictionary.txt'):
     return dictionary
 
 
-def tokenize_mention(mention, tokenizer, max_length=75):
+def tokenize_mention(cfg,  tokenizer):
     """
     Tokenize a single mention
     """
-
+    mention = cfg.inference.mention
+    max_length = cfg.tokenize.queries_max_length
     
+    mention_start_special_token = cfg.tokenize.special_tokens_dict["mention_start"]
+    mention_end_special_token = cfg.tokenize.special_tokens_dict["mention_end"]
 
+    mention = mention_start_special_token + " " + mention + " " + mention_end_special_token
     
     encoded = tokenizer(
         mention,
@@ -69,7 +73,7 @@ def main():
     
     # Tokenize mention
     print(f"\nProcessing mention: '{cfg.inference.mention}'")
-    mention_tokens = tokenize_mention(cfg.inference.mention, tokenizer, cfg.tokenize.queries_max_length)
+    mention_tokens = tokenize_mention(cfg, tokenizer)
     mention_tokens = {k: v.to(device) for k, v in mention_tokens.items()}
     
     # Get mention embedding
