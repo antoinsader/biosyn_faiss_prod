@@ -21,6 +21,7 @@ class PathsConfig:
     
     dictionary_raw_path = "./data/raw/train_dictionary.txt"
     queries_raw_dir = "./data/raw/traindev"
+    test_queries_raw_dir = "./data/raw/test"
     tokenizer_meta_path = "./data/tokenizer.json"
 
     result_encoder_dir = None
@@ -243,8 +244,6 @@ def tokenizer_parse_args():
         cfg.tokenize.skip_tokenize_dictionary = True
     if args.skip_tokenizing_queries:
         cfg.tokenize.skip_tokenize_queries = True
-    if args.split_train_queries:
-        cfg.tokenize.split_train_queries = True
     
     if args.dictionary_path:
         assert os.path.exists(args.dictionary_path), f'Dict path: {args.dictionary_path} not exists'
@@ -254,9 +253,19 @@ def tokenizer_parse_args():
         assert os.path.isdir(args.queries_dir), f'Queries dir: {args.queries_dir} not exists'
         cfg.paths.queries_raw_dir = args.queries_dir
 
+    if args.test_queries_dir:
+        assert os.path.isdir(args.test_queries_dir), f'Test queries dir: {args.test_queries_dir} not exists'
+        cfg.paths.test_queries_raw_dir = args.test_queries_dir
+
+
+    if args.split_train_queries:
+        cfg.tokenize.split_train_queries = True
+    
     if args.test_split_percentage:
+        cfg.tokenize.split_train_queries = True
         assert 0.0 <= args.test_split_percentage <= 1.0 
         cfg.tokenize.test_split_percentage = args.test_split_percentage
+
 
     return cfg
 

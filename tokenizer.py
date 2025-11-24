@@ -257,7 +257,6 @@ if __name__=="__main__":
             json.dump(meta, f)
 
 
-
     if not cfg.tokenize.skip_tokenize_dictionary:
         print(f"Reading dictionary...")
         _, dictionary_cuis, dictionary_names_annotated = load_dictionary(cfg.paths.dictionary_raw_path, 
@@ -280,6 +279,36 @@ if __name__=="__main__":
         with open(tokens_paths.dictionary_meta  , "w") as f:
             json.dump(meta, f)
 
+
+    
+    if not cfg.tokenize.skip_test_queries:
+
+        test_tokens_paths = TokensPaths(cfg, dictionary_key='dictionary', queries_key='test_queries')
+
+
+        test_queries = load_queries(
+            data_dir=cfg.paths.test_queries_raw_dir,
+            queries_max_length=queries_max_length,
+            special_token_start=mention_start_special_token ,
+            special_token_end=mention_end_special_token,
+            tokenizer=tokenizer)
+
+        test_queries_names = [q[0] for q in test_queries]
+        test_queries_cuis = [q[1] for q in test_queries]
+        test_queries_sentences = [q[2] for q in test_queries]
+        np.save(test_tokens_paths.queries_cuis_path, test_queries_cuis)
+
+        tokenize_names(test_queries_sentences, 
+                       test_tokens_paths.queries_input_ids_path, 
+                       test_tokens_paths.queries_attention_mask_path, 
+                       max_length=queries_max_length,
+                       batch_size=tokenize_batch_size, tokenizer = tokenizer)
+
+        meta = {"shape": (len(test_queries_cuis), queries_max_length)}
+        with open(test_tokens_paths.queries_meta  , "w") as f:
+            json.dump(meta, f)
+
+
     if queries_cuis is not None and dictionary_cuis is not None:
         d = set(dictionary_cuis)
         for q in queries_cuis:
@@ -288,3 +317,4 @@ if __name__=="__main__":
 
     if cfg.tokenize.split_train_queries:
         split_queries(cfg, 'train_queries', 'test_queries')
+        
