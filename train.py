@@ -1,7 +1,7 @@
 
 # python train.py --training_log_name='minimzed dictionary' --use_small_dictionary --force_ivfpq --hard_positives_num=1 --hard_negatives_num=9
 
-# python train.py --training_log_name='big dictionary' --hard_positives_num=1 --hard_negatives_num=9
+# python train.py --training_log_name='big dictionary without annotation and with injection' --hard_positives_num=1 --hard_negatives_num=9
 
 
 import logging
@@ -155,11 +155,14 @@ class Trainer:
         for i, data_loader_item in tqdm(enumerate(my_loader), total=len(my_loader), desc=f"epoch@{epoch} - Training batches"):
             loss, accuracy_5, mrr, batch_margin = self.train_one_batch(data_loader_item)
             
-            epoch_loss += loss
+            epoch_loss += loss.item()
             epoch_accuracy_5 += accuracy_5
             epoch_mrr += mrr
             epoch_margin += batch_margin
             n_batches += 1
+
+            if i % 100 == 0:
+                self.logger.log_event(f"Training stats - batch {i}", message=f"Loss: {loss.item():.4f}", log_memory=True, epoch=epoch)
 
 
         avg_loss = (epoch_loss / max(1, n_batches)).item()
