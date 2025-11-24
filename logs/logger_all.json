@@ -1,6 +1,6 @@
 [
   {
-    "id": 1,
+    "id": 3,
     "start_time": "2025-11-23_22-06-17",
     "train_started": true,
     "finished": true,
@@ -19,7 +19,7 @@
     "eval_started": true
   },
   {
-    "id": 2,
+    "id": 4,
     "start_time": "2025-11-24_21-02-57",
     "train_started": true,
     "finished": true,
@@ -34,7 +34,7 @@
     "last_avg_acc_5": 0.9992977528089888,
     "last_avg_mrr": 0.9954362993829706,
     "last_avg_loss": 0.03334366543325753,
-    "result_encoder_dir": "./output/encoder_2/",
+    "result_encoder_dir": "./output/encoder_4/",
     "eval_started": true
   }
 ]
