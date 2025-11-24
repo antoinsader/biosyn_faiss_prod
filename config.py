@@ -122,7 +122,10 @@ class LoggerConfig:
     train_log_name: str = ""
 
 
-
+@dataclass
+class InferenceConfig:
+    mention: str = ""
+    topk: int = 5
 @dataclass
 class ModelConfig:
     model_name : str = 'dmis-lab/biobert-base-cased-v1.1'
@@ -194,6 +197,7 @@ class GlobalConfig:
     train: TrainingConfig = field(default_factory=TrainingConfig)
     faiss: FaissConfig = field(default_factory=FaissConfig)
     logger: LoggerConfig = field(default_factory=LoggerConfig)
+    inference: InferenceConfig = field(default_factory=InferenceConfig)
 
     skip_eval: bool = False
     skip_train: bool = False
@@ -316,6 +320,37 @@ def eval_parse_args():
 
         cfg.paths.faiss_path = os.path.join(args.result_encoder_dir, "faiss_index.faiss")
         assert os.path.exists(cfg.paths.faiss_path), f'Faiss not found,  {cfg.paths.faiss_path}'
+
+    return cfg
+
+def inference_parse_args():
+    cfg = GlobalConfig()
+    parser = argparse.ArgumentParser(description='ranker train')
+ # Required arguments
+    parser.add_argument('--mention', type=str, required=True, 
+                        help='Medical mention/entity to normalize (e.g., "breast cancer")')
+    
+    parser.add_argument('--result_encoder_dir', required=True,
+                        help='Result encoder dir, you should have this after tain, the dir is where the encoder files are saved')
+
+    # Optional arguments
+    parser.add_argument('--topk', type=int, default=5,
+                        help='Number of top candidates to retrieve (default: 5)')
+    
+
+    args = parser.parse_args()
+
+    if args.result_encoder_dir:
+        assert os.path.isdir(args.result_encoder_dir)
+        cfg.paths.result_encoder_dir = args.result_encoder_dir
+
+        cfg.paths.faiss_path = os.path.join(args.result_encoder_dir, "faiss_index.faiss")
+        assert os.path.exists(cfg.paths.faiss_path), f'Faiss not found,  {cfg.paths.faiss_path}'
+
+    if args.topk:
+        cfg.inference.topk = args.topk
+
+    cfg.inference.mention = args.mention
 
     return cfg
 
