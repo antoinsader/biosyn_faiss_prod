@@ -218,8 +218,8 @@ if __name__=="__main__":
 
         tokenize_names(test_queries_names, test_tokens_paths.queries_input_ids_path, test_tokens_paths.queries_attention_mask_path, max_length=queries_max_length)
 
-        meta = {"shape": (len(queries_cuis), queries_max_length)}
-        with open(tokens_paths.queries_meta  , "w") as f:
+        meta = {"shape": (len(test_queries_cuis), queries_max_length)}
+        with open(test_tokens_paths.queries_meta  , "w") as f:
             json.dump(meta, f)
 
 
