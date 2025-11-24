@@ -206,6 +206,8 @@ def tokenizer_parse_args():
     cfg = GlobalConfig()
     parser = argparse.ArgumentParser(description='ranker train')
 
+    parser.add_argument('--model_name_or_path',  type=str)
+
     parser.add_argument('--dictionary_path',  type=str)
     parser.add_argument('--queries_dir',  type=str)
 
@@ -219,6 +221,9 @@ def tokenizer_parse_args():
 
     args = parser.parse_args()
 
+
+    if args.model_name_or_path:
+        cfg.model.model_name = args.model_name_or_path
 
     if args.skip_tokenizing_dictionary:
         cfg.tokenize.skip_tokenize_dictionary = True

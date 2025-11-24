@@ -105,6 +105,7 @@ python tokenizer.py
 
 | Argument | Type | Default | Description |
 |-----------|------|----------|-------------|
+| `--model_name_or_path` | str | `dmis-lab/biobert-base-cased-v1.1` | Path to model name or directory |
 | `--dictionary_path` | str | `./data/raw/train_dictionary.txt` | Path to dictionary file |
 | `--queries_dir` | str | `./data/raw/traindev` | Path to traindev folder |
 | `--dictionary_max_length` | int | 120 | Tokenizer padding/truncation length for dictionary |
