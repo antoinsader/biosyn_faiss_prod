@@ -1,6 +1,7 @@
 import json
 import os
 import sys
+import subprocess
 
 def load_logs_metadata():
     log_json_path = os.path.join("logs", "logger_all.json")
@@ -38,29 +39,101 @@ def get_epoch_summaries(log_file_path):
         print(f"Error reading file: {e}")
         return
 
-    looking_for_message = False
-    found_any = False
-    
-    # Header for the table
-    print(f"{'Epoch Summary Message':<80}")
-    print("-" * 80)
+    epoch_data = {}
+    current_event = None
+    current_epoch = None
 
     for line in lines:
-        if "▶ EVENT LOG :: [TRAIN] :: [Epoch summary] ::" in line:
-            looking_for_message = True
+        line = line.strip()
+        if "▶ EVENT LOG :: [TRAIN]" in line:
+            # Parse event type and epoch
+            parts = line.split("::")
+            if len(parts) >= 4:
+                event_type = parts[2].strip(" []")
+                epoch_str = parts[3].strip()
+                if "epoch=" in epoch_str:
+                    try:
+                        current_epoch = int(epoch_str.split("=")[1].strip())
+                        current_event = event_type
+                        if current_epoch not in epoch_data:
+                            epoch_data[current_epoch] = {"summary": "", "recall": ""}
+                    except ValueError:
+                        current_event = None
+                        current_epoch = None
+            else:
+                current_event = None
+                current_epoch = None
             continue
         
-        if looking_for_message and "Message     :" in line:
-            # Extract message content
-            parts = line.split("Message     :", 1)
-            if len(parts) > 1:
-                message = parts[1].strip()
-                print(message)
-                found_any = True
-            looking_for_message = False
-    
-    if not found_any:
+        if current_event and current_epoch is not None and line.startswith("Message     :"):
+            message = line.split(":", 1)[1].strip()
+            if "Epoch summary" in current_event:
+                epoch_data[current_epoch]["summary"] = message
+            elif "Faiss recall" in current_event:
+                # Handle both old "Faiss recall@k" and new "Faiss recall"
+                epoch_data[current_epoch]["recall"] = message
+            
+            # Reset after finding message to avoid capturing multiple lines if not intended
+            # (Assuming one message line per event for now based on log format)
+            current_event = None 
+
+    if not epoch_data:
         print("No epoch summaries found.")
+        return
+
+    # Header for the table
+    print(f"{'Epoch':<6} | {'Faiss Recall':<40} | {'Epoch Summary Message':<80}")
+    print("-" * 130)
+
+    for epoch in sorted(epoch_data.keys()):
+        data = epoch_data[epoch]
+        summary = data["summary"]
+        recall = data["recall"]
+        if summary or recall:
+            print(f"{epoch:<6} | {recall:<40} | {summary}")
+
+def run_eval(result_encoder_dir):
+    if not result_encoder_dir:
+        print("Error: No result_encoder_dir found in log details.")
+        return
+
+    print(f"\nRunning Eval for: {result_encoder_dir}")
+    cmd = [sys.executable, "eval.py", "--result_encoder_dir", result_encoder_dir]
+    
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running eval: {e}")
+    except KeyboardInterrupt:
+        print("\nEval interrupted.")
+
+def run_inference(result_encoder_dir):
+    if not result_encoder_dir:
+        print("Error: No result_encoder_dir found in log details.")
+        return
+
+    mention = input("Enter mention to normalize: ").strip()
+    if not mention:
+        print("Error: Mention cannot be empty.")
+        return
+        
+    topk_str = input("Enter topk (default 5): ").strip()
+    topk = "5"
+    if topk_str:
+        if not topk_str.isdigit():
+             print("Error: topk must be a number.")
+             return
+        topk = topk_str
+
+    print(f"\nRunning Inference for: '{mention}' with topk={topk}")
+    cmd = [sys.executable, "inference.py", "--mention", mention, "--result_encoder_dir", result_encoder_dir, "--topk", topk]
+    
+    try:
+        subprocess.run(cmd, check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Error running inference: {e}")
+    except KeyboardInterrupt:
+        print("\nInference interrupted.")
 
 def main():
     logs = load_logs_metadata()
@@ -85,6 +158,7 @@ def main():
         
         selected_log = logs[idx]
         log_file_path = selected_log.get("log_details_file")
+        result_encoder_dir = selected_log.get("result_encoder_dir")
         
         # Handle relative paths if necessary (assuming running from root)
         if log_file_path.startswith("./"):
@@ -96,13 +170,18 @@ def main():
         while True:
             print("\nOptions:")
             print("1. get table epochs")
+            print("2. Run Eval")
+            print("3. Run Inference")
             print("b. Back to log list")
             
             opt = input("Select an option: ").strip()
             
             if opt == '1':
-                print("loading get table epochs")
                 get_epoch_summaries(log_file_path)
+            elif opt == '2':
+                run_eval(result_encoder_dir)
+            elif opt == '3':
+                run_inference(result_encoder_dir)
             elif opt.lower() == 'b':
                 break
             else:
