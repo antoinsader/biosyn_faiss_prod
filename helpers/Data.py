@@ -98,18 +98,34 @@ class MyDataset(Dataset):
                 shape=self.tokens_paths.queries_shape
             )
 
-        self.dictionary_input_ids = np.memmap(
+        if cfg.train.load_data_to_ram:
+            print("Loading dictionary into RAM...")
+            self.dictionary_input_ids = np.array(np.memmap(
                 self.tokens_paths.dictionary_input_ids_path,
                 mode="r",
                 dtype=np.int32,
                 shape=self.tokens_paths.dictionary_shape
-            )
-        self.dictionary_attention_masks = np.memmap(
+            ))
+            self.dictionary_attention_masks = np.array(np.memmap(
                 self.tokens_paths.dictionary_attention_mask_path,
                 mode="r",
                 dtype=np.int32,
                 shape=self.tokens_paths.dictionary_shape
-            )
+            ))
+            print("Dictionary loaded into RAM.")
+        else:
+            self.dictionary_input_ids = np.memmap(
+                    self.tokens_paths.dictionary_input_ids_path,
+                    mode="r",
+                    dtype=np.int32,
+                    shape=self.tokens_paths.dictionary_shape
+                )
+            self.dictionary_attention_masks = np.memmap(
+                    self.tokens_paths.dictionary_attention_mask_path,
+                    mode="r",
+                    dtype=np.int32,
+                    shape=self.tokens_paths.dictionary_shape
+                )
 
 
         self.dictionary_cui_to_idx = defaultdict(list)

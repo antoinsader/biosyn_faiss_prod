@@ -147,6 +147,7 @@ class TrainingConfig:
     save_checkpoints:bool = True
     load_last_checkpoint:bool = True
     use_small_dictionary: bool = False
+    load_data_to_ram: bool = False
 
     inject_hard_negatives_candidates:bool= False
     hard_negatives_num:int= 0
@@ -338,6 +339,7 @@ def train_parse_args():
 
     parser.add_argument('--use_amp',  action="store_true")
     parser.add_argument('--force_ivfpq',  action="store_true")
+    parser.add_argument('--load_data_to_ram',  action="store_true")
 
 
 
@@ -398,6 +400,9 @@ def train_parse_args():
 
     if args.force_ivfpq :
         cfg.faiss.force_ivfpq = True
+
+    if args.load_data_to_ram:
+        cfg.train.load_data_to_ram = True
 
     return cfg
 
