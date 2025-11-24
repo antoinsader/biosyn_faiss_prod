@@ -79,7 +79,7 @@ class TokensConfig:
     skip_tokenize_dictionary: bool = False
     skip_tokenize_queries: bool = False
     split_train_queries :bool=False
-    test_split_percentage: float = 0.8
+    test_split_percentage: float = 0.2
 
 
 
@@ -227,7 +227,7 @@ def tokenizer_parse_args():
 
     parser.add_argument('--dictionary_path',  type=str)
     parser.add_argument('--queries_dir',  type=str)
-
+    parser.add_argument('--test_queries_dir',  type=str)
     parser.add_argument('--split_train_queries',  action="store_true")
     parser.add_argument('--test_split_percentage',  type=float)
 

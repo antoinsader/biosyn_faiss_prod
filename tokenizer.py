@@ -83,7 +83,7 @@ def split_queries(cfg: GlobalConfig, train_queries_key='train_queries', test_que
     train_n = len(train_cuis)
     assert train_n == train_shape[0], f"train shape: {train_shape} is not the same as train_n: {train_n}"
 
-    split_idx = int(train_n * cfg.tokenize.test_split_percentage)
+    split_idx = int(train_n * (1 - cfg.tokenize.test_split_percentage))
 
     random_rng = np.random.default_rng(seed=42)
     shuffled_random_indices = random_rng.permutation(train_n)
