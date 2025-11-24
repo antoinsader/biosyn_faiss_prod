@@ -302,7 +302,6 @@ def load_queries(data_dir, filter_composite=True, filter_cuiless=True,filter_dup
             data.append((mention, cui, semantic_type, mention_start_idx, mention_end_idx, full_text))
     if filter_duplicate:
         data = list(dict.fromkeys(data))
-    data = np.array(data)
     return data
 
 def load_dictionary(dictionary_path):
@@ -314,5 +313,4 @@ def load_dictionary(dictionary_path):
             if line == "": continue
             cui, name = line.split("||")
             data.append((name,cui))
-    data = np.array(data)
     return data
