@@ -294,6 +294,7 @@ class CheckPointing:
                     "start_time": datestr,
                     "train_started": True,
                     "finished": False,
+                    "training_log_name": self.cfg.logger.train_log_name,
                     "log_details_file": self.current_experiment_log_path
                 }
                 all_experiments.append(current_experiment)

@@ -1,8 +1,7 @@
 
 # python train.py --training_log_name='minimzed dictionary' --use_small_dictionary --force_ivfpq --hard_positives_num=1 --hard_negatives_num=9
 
-# python train.py --training_log_name='big dictionary without annotation and with injection' --hard_positives_num=1 --hard_negatives_num=9
-
+# python train.py --training_log_name='big dictionary with annotation and with injection' --hard_positives_num=1 --hard_negatives_num=9
 
 import logging
 import torch
@@ -270,6 +269,7 @@ class Trainer:
 
         self.encoder.save_state(self.result_encoder_dir)
         self.save_checkpoint(epoch='last')
+        self.faiss.save_index()
 
         self.logger.log_event("Train finished", t0=full_train_start_time, log_memory=False)
         self.logger.log_event("Main info: " , message=self.checkpointing.current_experiment, log_memory=False)
