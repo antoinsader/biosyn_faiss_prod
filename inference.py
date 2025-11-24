@@ -111,7 +111,7 @@ def main():
     else:
         mention_embed = mention_embed.cpu().numpy().astype(np.float32)
     
-    _, candidate_idxs = faiss.faiss_index.search(mention_embed, cfg.inference.topk)
+    _, candidate_idxs = faiss.faiss_index.search(mention_embed, cfg.inference.topk * 3)
     candidate_idxs = candidate_idxs[0]  # Get first (and only) query's results
     
     # Load dictionary CUIs
@@ -131,9 +131,22 @@ def main():
     print(f"{'='*80}\n")
     
     results = []
+    seen_cuis = set()
+    seen_names = set()
     for rank, idx in enumerate(candidate_idxs, 1):
+        if rank > cfg.inference.topk:
+            break
+
+
         cui = dictionary_cuis[idx]
         name = dictionary_dict.get(cui, "N/A")
+
+        if cui in seen_cuis or name in seen_names:
+            continue
+
+        seen_cuis.add(cui)
+        seen_names.add(name)
+
         results.append({
             'rank': rank,
             'cui': cui,
