@@ -286,5 +286,5 @@ if __name__=="__main__":
             assert q in d, f"query cui {q} is not in the dictionary cuis"
 
 
-    if not cfg.tokenize.skip_split:
+    if cfg.tokenize.split_train_queries:
         split_queries(cfg, 'train_queries', 'test_queries')

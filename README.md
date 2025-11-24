@@ -108,10 +108,11 @@ python tokenizer.py
 | `--model_name_or_path` | str | `dmis-lab/biobert-base-cased-v1.1` | Path to model name or directory |
 | `--dictionary_path` | str | `./data/raw/train_dictionary.txt` | Path to dictionary file |
 | `--queries_dir` | str | `./data/raw/traindev` | Path to traindev folder |
-| `--test_split_percentage` | float | 0.8 | Fraction of traindev used for training |
 | `--skip_tokenizing_dictionary` | bool | False | Skip dictionary tokenization |
 | `--skip_tokenizing_queries` | bool | False | Skip query tokenization |
-| `--skip_split` | bool | False | Skip splitting traindev into train/test |
+| `--split_train_queries` | bool | False | Split traindev queries into train/test sets, you can control the percentage with `test_split_percentage` |
+| `--test_split_percentage` | float | 0.8 | Fraction of traindev queries used for training, you should --split_train_queries to use this argument |
+
 
 
 **Examples:**
@@ -119,7 +120,7 @@ python tokenizer.py
 - If you want to tokenize only specific dictionary that you have, you can execute
 
     ```bash
-        python tokenizer.py --dictionary_path='./path/to/dictionary.txt' --skip_tokenizing_queries --skip_split
+        python tokenizer.py --dictionary_path='./path/to/dictionary.txt' --skip_tokenizing_queries
     ```
 
 - After the process is finished, results would be saved in:
@@ -135,7 +136,7 @@ data/tokens/
  └── _dictionary_meta.json          ← dictionary metadata (containing shape of array)
 ```
 
-If --skip_split was not set, you will have also files for test dataset (test_queries_inp.mmap, test_queries_att.mmap, test_queries_cuis.npy, test_queries_meta.json)
+If --split_train_queries is set, you will have also files for test dataset (test_queries_inp.mmap, test_queries_att.mmap, test_queries_cuis.npy, test_queries_meta.json)
 
 
 ---

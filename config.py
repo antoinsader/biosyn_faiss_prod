@@ -77,7 +77,7 @@ class TokensConfig:
 
     skip_tokenize_dictionary: bool = False
     skip_tokenize_queries: bool = False
-    skip_split :bool=False
+    split_train_queries :bool=False
     test_split_percentage: float = 0.8
 
 
@@ -227,11 +227,11 @@ def tokenizer_parse_args():
     parser.add_argument('--dictionary_path',  type=str)
     parser.add_argument('--queries_dir',  type=str)
 
+    parser.add_argument('--split_train_queries',  action="store_true")
     parser.add_argument('--test_split_percentage',  type=float)
 
     parser.add_argument('--skip_tokenizing_dictionary',  action="store_true")
     parser.add_argument('--skip_tokenizing_queries',  action="store_true")
-    parser.add_argument('--skip_split',  action="store_true")
 
     args = parser.parse_args()
 
@@ -243,8 +243,8 @@ def tokenizer_parse_args():
         cfg.tokenize.skip_tokenize_dictionary = True
     if args.skip_tokenizing_queries:
         cfg.tokenize.skip_tokenize_queries = True
-    if args.skip_split:
-        cfg.tokenize.skip_split = True
+    if args.split_train_queries:
+        cfg.tokenize.split_train_queries = True
     
     if args.dictionary_path:
         assert os.path.exists(args.dictionary_path), f'Dict path: {args.dictionary_path} not exists'
