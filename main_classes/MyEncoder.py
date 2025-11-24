@@ -27,6 +27,10 @@ class MyEncoder():
 
         encoder = AutoModel.from_pretrained(self.cfg.model_name, use_safetensors=True)
 
+        if self.cfg.enable_gradient_checkpoint:
+            encoder.gradient_checkpointing_enable()
+            print("Gradient checkpointing enabled")
+
         tokenizer_meta_path  = cfg.paths.tokenizer_meta_path
         
         

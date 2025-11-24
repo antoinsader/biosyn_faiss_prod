@@ -150,7 +150,7 @@ class TrainingConfig:
     batch_size: int = 16
     
 
-    learning_rate: float = 5e-6 #5e-5 
+    learning_rate: float = 1e-5  #5e-6 #5e-5 
 
 
     weight_decay: float = 0.001
@@ -170,6 +170,9 @@ class TrainingConfig:
     hard_positives_num:int= 0
 
     freeze_lower_layer_epoch_max:int=2
+    enable_gradient_checkpoint:bool=False
+
+
 
 @dataclass
 class FaissConfig:
@@ -398,6 +401,7 @@ def train_parse_args():
     parser.add_argument('--use_amp',  action="store_true")
     parser.add_argument('--force_ivfpq',  action="store_true")
     parser.add_argument('--no_load_data_to_ram',  action="store_true")
+    parser.add_argument('--enable_gradient_checkpoint',  action="store_true")
 
 
 
@@ -461,6 +465,11 @@ def train_parse_args():
 
     if args.no_load_data_to_ram:
         cfg.train.load_data_to_ram = False
+
+    if args.enable_gradient_checkpoint:
+        cfg.train.enable_gradient_checkpoint = True
+    else:
+        print(f"If your dictionary entries are big (more than 1m), you should consider enabling gradient checkpointing, to not have OOM (it would be slower but more stable)")
 
     return cfg
 

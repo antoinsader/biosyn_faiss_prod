@@ -1,7 +1,5 @@
 
-# python train.py --training_log_name='minimzed dictionary' --use_small_dictionary --force_ivfpq --hard_positives_num=1 --hard_negatives_num=9
-
-# python train.py --training_log_name='big dictionary with annotation and with injection' --hard_positives_num=1 --hard_negatives_num=9
+# python train.py --training_log_name='big dictionary' --hard_positives_num=0 --hard_negatives_num=0 --num_epochs=6  --topk=50 --train_batch_size=32 --enable_gradient_checkpoint
 
 import logging
 import torch
