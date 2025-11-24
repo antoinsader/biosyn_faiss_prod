@@ -31,7 +31,7 @@ def compute_metrics(scores, targets, k=5):
         avg_pos = (scores * pos_mask.float()).sum(dim=1) / num_pos
         avg_neg = (scores * neg_mask.float()).sum(dim=1) / num_neg
 
-        margin = avg_pos - avg_neg
+        margin = (avg_pos - avg_neg).mean()
 
 
         _, sorted_indices = scores.sort(descending=True, dim=1)
