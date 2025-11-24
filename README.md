@@ -105,6 +105,7 @@ python tokenizer.py
 
 | Argument | Type | Default | Description |
 |-----------|------|----------|-------------|
+| `--model_name_or_path` | str | `dmis-lab/biobert-base-cased-v1.1` | Path to model name or directory |
 | `--dictionary_path` | str | `./data/raw/train_dictionary.txt` | Path to dictionary file |
 | `--queries_dir` | str | `./data/raw/traindev` | Path to traindev folder |
 | `--test_split_percentage` | float | 0.8 | Fraction of traindev used for training |
