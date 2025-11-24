@@ -40,6 +40,8 @@ class Evaluator:
         self.device = "cuda" if self.use_cuda else "cpu"
         self.dataset = MyDataset(self.tokens_paths, cfg)
         self.encoder = MyEncoder(cfg)
+        self.encoder.load_state(self.encoder_dir) 
+        
         self.model = Reranker(self.encoder, self.cfg)
         self.faiss = MyFaiss(cfg, save_index_path="",  dataset=self.dataset, tokens_paths=self.tokens_paths, encoder=self.encoder)
         self.faiss.load_faiss_index(cfg.paths.faiss_path)
