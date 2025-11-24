@@ -1,0 +1,245 @@
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [FAISS BUILD] :: epoch= 1
+
+----------------------------------------------------------------------
+		Message     : FAISS built from dictionary embs 
+
+		Event elapsed time: 35.12 seconds
+		CPU Memory  : 1430.7 MB
+		GPU MEMORY STATS: free/total = 21723.7/24210.3MB - allocated/peak allocated = 426.3/7365.4MB - reserved/peak reserved = 468.0/10370.0MB
+----------------------------------------------------------------------
+■ EVENT LOG END :: FAISS BUILD
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [FAISS SEARCH]
+
+----------------------------------------------------------------------
+		Message     : FAISS searched the candidates and resulted candidates_idxs with shape=(5689, 50) 
+
+		Event elapsed time: 1.01 seconds
+		CPU Memory  : 1485.2 MB
+		GPU MEMORY STATS: free/total = 11819.7/24210.3MB - allocated/peak allocated = 426.3/7365.4MB - reserved/peak reserved = 10372.0/10372.0MB
+----------------------------------------------------------------------
+■ EVENT LOG END :: FAISS SEARCH
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [Faiss recall] :: epoch= 1
+
+----------------------------------------------------------------------
+		Message     : faiss recall@50: 0.4750. faiss recall@5: 0.2756 
+
+----------------------------------------------------------------------
+■ EVENT LOG END :: Faiss recall
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [Epoch summary] :: epoch= 1
+
+----------------------------------------------------------------------
+		Message     : Epoch average loss=1.162, average margin=-0.1093, average mrr=0.4121, average accuracy@5=0.4438.   loss_temp=0.060 
+
+		Event elapsed time: 121.61 seconds
+		CPU Memory  : 1791.6 MB
+		GPU MEMORY STATS: free/total = 1869.7/24210.3MB - allocated/peak allocated = 1206.9/19602.7MB - reserved/peak reserved = 20310.0/20310.0MB
+----------------------------------------------------------------------
+■ EVENT LOG END :: Epoch summary
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [FAISS BUILD] :: epoch= 2
+
+----------------------------------------------------------------------
+		Message     : FAISS built from dictionary embs 
+
+		Event elapsed time: 14.24 seconds
+		CPU Memory  : 1818.0 MB
+		GPU MEMORY STATS: free/total = 18287.7/24210.3MB - allocated/peak allocated = 1206.6/8163.1MB - reserved/peak reserved = 3894.0/11994.0MB
+----------------------------------------------------------------------
+■ EVENT LOG END :: FAISS BUILD
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [FAISS SEARCH]
+
+----------------------------------------------------------------------
+		Message     : FAISS searched the candidates and resulted candidates_idxs with shape=(5689, 50) 
+
+		Event elapsed time: 0.99 seconds
+		CPU Memory  : 1818.0 MB
+		GPU MEMORY STATS: free/total = 10187.7/24210.3MB - allocated/peak allocated = 1206.6/8163.1MB - reserved/peak reserved = 11994.0/11994.0MB
+----------------------------------------------------------------------
+■ EVENT LOG END :: FAISS SEARCH
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [Faiss recall] :: epoch= 2
+
+----------------------------------------------------------------------
+		Message     : faiss recall@50: 0.7914. faiss recall@5: 0.6971 
+
+----------------------------------------------------------------------
+■ EVENT LOG END :: Faiss recall
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [Epoch summary] :: epoch= 2
+
+----------------------------------------------------------------------
+		Message     : Epoch average loss=0.341, average margin=0.2191, average mrr=0.7498, average accuracy@5=0.7707.   loss_temp=0.060 
+
+		Event elapsed time: 179.12 seconds
+		CPU Memory  : 1820.9 MB
+		GPU MEMORY STATS: free/total = 1319.7/24210.3MB - allocated/peak allocated = 1286.8/20359.1MB - reserved/peak reserved = 20862.0/20862.0MB
+----------------------------------------------------------------------
+■ EVENT LOG END :: Epoch summary
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [FAISS BUILD] :: epoch= 3
+
+----------------------------------------------------------------------
+		Message     : FAISS built from dictionary embs 
+
+		Event elapsed time: 14.36 seconds
+		CPU Memory  : 1825.6 MB
+		GPU MEMORY STATS: free/total = 17753.7/24210.3MB - allocated/peak allocated = 1286.5/8312.8MB - reserved/peak reserved = 4428.0/12528.0MB
+----------------------------------------------------------------------
+■ EVENT LOG END :: FAISS BUILD
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [FAISS SEARCH]
+
+----------------------------------------------------------------------
+		Message     : FAISS searched the candidates and resulted candidates_idxs with shape=(5689, 50) 
+
+		Event elapsed time: 1.05 seconds
+		CPU Memory  : 1825.6 MB
+		GPU MEMORY STATS: free/total = 9653.7/24210.3MB - allocated/peak allocated = 1286.5/8312.8MB - reserved/peak reserved = 12528.0/12528.0MB
+----------------------------------------------------------------------
+■ EVENT LOG END :: FAISS SEARCH
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [Faiss recall] :: epoch= 3
+
+----------------------------------------------------------------------
+		Message     : faiss recall@50: 0.8861. faiss recall@5: 0.8295 
+
+----------------------------------------------------------------------
+■ EVENT LOG END :: Faiss recall
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [checkpoint resotred]
+
+----------------------------------------------------------------------
+		Message     : Restoring checkpoint from file: ./output/encoder_9/checkpoints/last.pt 
+
+----------------------------------------------------------------------
+■ EVENT LOG END :: checkpoint resotred
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [FAISS BUILD] :: epoch= 3
+
+----------------------------------------------------------------------
+		Message     : FAISS built from dictionary embs 
+
+		Event elapsed time: 14.43 seconds
+		CPU Memory  : 1575.3 MB
+		GPU MEMORY STATS: free/total = 21051.7/24210.3MB - allocated/peak allocated = 987.8/8028.1MB - reserved/peak reserved = 1140.0/11044.0MB
+----------------------------------------------------------------------
+■ EVENT LOG END :: FAISS BUILD
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [FAISS SEARCH]
+
+----------------------------------------------------------------------
+		Message     : FAISS searched the candidates and resulted candidates_idxs with shape=(5689, 50) 
+
+		Event elapsed time: 0.99 seconds
+		CPU Memory  : 1609.2 MB
+		GPU MEMORY STATS: free/total = 11147.7/24210.3MB - allocated/peak allocated = 987.8/8028.1MB - reserved/peak reserved = 11044.0/11044.0MB
+----------------------------------------------------------------------
+■ EVENT LOG END :: FAISS SEARCH
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [Faiss recall] :: epoch= 3
+
+----------------------------------------------------------------------
+		Message     : faiss recall@50: 0.8861. faiss recall@5: 0.8295 
+
+----------------------------------------------------------------------
+■ EVENT LOG END :: Faiss recall
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [checkpoint resotred]
+
+----------------------------------------------------------------------
+		Message     : Restoring checkpoint from file: ./output/encoder_9/checkpoints/last.pt 
+
+----------------------------------------------------------------------
+■ EVENT LOG END :: checkpoint resotred
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [FAISS BUILD] :: epoch= 3
+
+----------------------------------------------------------------------
+		Message     : FAISS built from dictionary embs 
+
+		Event elapsed time: 14.39 seconds
+		CPU Memory  : 1574.8 MB
+		GPU MEMORY STATS: free/total = 21051.7/24210.3MB - allocated/peak allocated = 987.8/8028.1MB - reserved/peak reserved = 1140.0/11044.0MB
+----------------------------------------------------------------------
+■ EVENT LOG END :: FAISS BUILD
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [FAISS SEARCH]
+
+----------------------------------------------------------------------
+		Message     : FAISS searched the candidates and resulted candidates_idxs with shape=(5689, 50) 
+
+		Event elapsed time: 1.01 seconds
+		CPU Memory  : 1609.8 MB
+		GPU MEMORY STATS: free/total = 11147.7/24210.3MB - allocated/peak allocated = 987.8/8028.1MB - reserved/peak reserved = 11044.0/11044.0MB
+----------------------------------------------------------------------
+■ EVENT LOG END :: FAISS SEARCH
+======================================================================
+
+
+======================================================================
+▶ EVENT LOG :: [TRAIN] :: [Faiss recall] :: epoch= 3
+
+----------------------------------------------------------------------
+		Message     : faiss recall@50: 0.8861. faiss recall@5: 0.8295 
+
+----------------------------------------------------------------------
+■ EVENT LOG END :: Faiss recall
+======================================================================
+
