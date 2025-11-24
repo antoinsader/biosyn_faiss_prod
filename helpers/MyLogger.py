@@ -227,7 +227,6 @@ class CheckPointing:
 
         assert self.current_experiment_id is not None
         assert self.current_experiment_log_path is not None
-        assert self.current_experiment["id"] == self.all_experiments[-1]["id"]
 
         if not self.eval:
             cfg.paths.set_result_encoder_dir(cfg.paths.output_dir + f"/encoder_{self.current_experiment_id}/")
