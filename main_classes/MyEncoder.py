@@ -141,7 +141,8 @@ class MyEncoder():
             self.encoder.load_state_dict(state['encoder'])
             self.projection.load_state_dict(state['projection'])
         else:
-            assert isinstance(state, str) and os.path.isdir(state)
+            assert isinstance(state, str)
+            assert os.path.exists(state)
             self.encoder.load_state_dict(torch.load(state)) 
             self.projection.load_state_dict(torch.load(os.path.join(state, "projection.pth")))
 
