@@ -131,10 +131,10 @@ class TrainingConfig:
     load_last_checkpoint:bool = True
     use_small_dictionary: bool = False
 
-    inject_hard_negatives_candidates:bool= True
-    hard_negatives_num:int= 7
-    inject_hard_positives_candidates:bool= True
-    hard_positives_num:int= 2
+    inject_hard_negatives_candidates:bool= False
+    hard_negatives_num:int= 0
+    inject_hard_positives_candidates:bool= False
+    hard_positives_num:int= 0
 
     freeze_lower_layer_epoch_max:int=2
 
@@ -341,10 +341,19 @@ def train_parse_args():
 
     if args.hard_negatives_num:
         assert args.hard_negatives_num < cfg.train.topk, f'Hard negatives num should be less than topk ({cfg.train.topk})'
-        cfg.train.inject_hard_negatives_candidates = args.hard_negatives_num
+        if args.hard_negatives_num == 0:
+            cfg.train.inject_hard_negatives_candidates = False
+        else:
+            cfg.train.inject_hard_negatives_candidates = True
+
+        cfg.train.hard_negatives_num = args.hard_negatives_num
     if args.hard_positives_num:
         assert args.hard_positives_num < cfg.train.topk, f'Hard positives num should be less than topk ({cfg.train.topk})'
-        cfg.train.inject_hard_positives_candidates = args.hard_positives_num
+        if args.hard_positives_num == 0:
+            cfg.train.inject_hard_positives_candidates = False
+        else:
+            cfg.train.inject_hard_positives_candidates = True    
+        cfg.train.hard_positives_num = args.hard_positives_num
 
 
     if args.learning_rate:
