@@ -136,15 +136,27 @@ class MyEncoder():
     def load_state(self, state):
         """
             For restoring checkpoint
+            Args:
+                state: Either a dict with 'encoder' and 'projection' keys (from checkpoint),
+                       or a str path to a directory containing saved model files
         """
         if isinstance(state, dict):
+            # Loading from checkpoint dictionary (during training)
             self.encoder.load_state_dict(state['encoder'])
             self.projection.load_state_dict(state['projection'])
         else:
-            assert isinstance(state, str)
-            assert os.path.exists(state)
-            self.encoder.load_state_dict(state) 
-            self.projection.load_state_dict(torch.load(os.path.join(state, "projection.pth")))
+            # Loading from saved model directory (during eval/inference)
+            assert isinstance(state, str), "state must be either dict or str"
+            assert os.path.exists(state), f"Model directory does not exist: {state}"
+            
+            # Load encoder from saved pretrained model (handles config.json and model.safetensors)
+            loaded_encoder = AutoModel.from_pretrained(state, use_safetensors=True)
+            self.encoder.load_state_dict(loaded_encoder.state_dict())
+            
+            # Load projection weights
+            projection_path = os.path.join(state, "projection.pth")
+            assert os.path.exists(projection_path), f"Projection file not found: {projection_path}"
+            self.projection.load_state_dict(torch.load(projection_path, map_location=self.device))
 
 
     def get_state_dict(self):
