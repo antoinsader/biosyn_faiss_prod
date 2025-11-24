@@ -128,7 +128,7 @@ def run_inference(result_encoder_dir):
         topk = topk_str
 
     print(f"\nRunning Inference for: '{mention}' with topk={topk}")
-    cmd = [sys.executable, "inference.py", "--mention", mention, "--result_encoder_dir", result_encoder_dir, "--topk", topk]
+    cmd = [sys.executable, "inference.py", "--mention", mention, "--model_dir", result_encoder_dir, "--topk", topk]
     
     try:
         subprocess.run(cmd, check=True)
