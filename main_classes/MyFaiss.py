@@ -264,5 +264,6 @@ class MyFaiss():
             Save index to save_index_path
         """
         faiss.write_index(faiss.index_gpu_to_cpu(self.faiss_index), self.save_index_path)
+        print(f'FAISS Index saved to {self.save_index_path}')
         return self.save_index_path
 
