@@ -155,7 +155,11 @@ class Trainer:
         for i, data_loader_item in tqdm(enumerate(my_loader), total=len(my_loader), desc=f"epoch@{epoch} - Training batches"):
             loss, accuracy_5, mrr, batch_margin = self.train_one_batch(data_loader_item)
             
-            epoch_loss += loss.item()
+            if torch.is_tensor(loss):
+                epoch_loss += loss.item()
+            else:
+                epoch_loss += loss
+
             epoch_accuracy_5 += accuracy_5
             epoch_mrr += mrr
             epoch_margin += batch_margin
@@ -165,10 +169,10 @@ class Trainer:
                 self.logger.log_event(f"Training stats - batch {i}", message=f"Loss: {loss.item():.4f}", log_memory=True, epoch=epoch)
 
 
-        avg_loss = (epoch_loss / max(1, n_batches)).item()
-        avg_mrr = (epoch_mrr / max(1, n_batches)).item()
-        avg_accuracy_5 = (epoch_accuracy_5 / max(1, n_batches)).item()
-        avg_margin = (epoch_margin / max(1, n_batches)).item()  # Average
+        avg_loss = (epoch_loss / max(1, n_batches))
+        avg_mrr = (epoch_mrr / max(1, n_batches))
+        avg_accuracy_5 = (epoch_accuracy_5 / max(1, n_batches))
+        avg_margin = (epoch_margin / max(1, n_batches))  # Average
 
         self.logger.log_event(
             "Epoch summary",
