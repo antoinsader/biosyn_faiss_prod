@@ -204,6 +204,5 @@ if __name__=="__main__":
         with open(tokens_paths.dictionary_meta  , "w") as f:
             json.dump(meta, f)
 
-
-    if not cfg.tokenize.skip_split:
+    if cfg.tokenize.split_train_queries:
         split_queries(cfg, 'train_queries', 'test_queries')
