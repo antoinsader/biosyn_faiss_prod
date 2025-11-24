@@ -64,7 +64,7 @@ class Trainer:
                 - We do backpropogation, scale, optimize, update and step
                 - We calculate accuracy and mrr metrics for the batch
         """
-        self.model.optimizer.zero_grad(set_to_none=True)
+        self.model.optimizer.zero_grad()
         with torch.amp.autocast(device_type="cuda", enabled=(self.use_cuda and self.cfg.train.use_amp)):
             batch_x, batch_y = data_loader_item
             batch_query_tokens, batch_candidates_tokens = batch_x
