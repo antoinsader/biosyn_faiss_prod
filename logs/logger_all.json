@@ -16,10 +16,5 @@
     "last_avg_mrr": 0.9798549453863937,
     "last_avg_loss": 0.09435153011954651,
     "result_encoder_dir": "./output/encoder_3/"
-  },
-  {
-    "id": 2,
-    "eval_started": true,
-    "log_details_file": "./logs/log_eval_2_2025-11-24_19-03-16.log"
   }
 ]
