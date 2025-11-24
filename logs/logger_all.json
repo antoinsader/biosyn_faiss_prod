@@ -15,6 +15,26 @@
     "last_avg_acc_5": 0.9943820224719101,
     "last_avg_mrr": 0.9798549453863937,
     "last_avg_loss": 0.09435153011954651,
-    "result_encoder_dir": "./output/encoder_3/"
+    "result_encoder_dir": "./output/encoder_3/",
+    "eval_started": true
+  },
+  {
+    "id": 2,
+    "start_time": "2025-11-24_21-02-57",
+    "train_started": true,
+    "finished": true,
+    "training_log_name": "small dictionary with annotating and injecting",
+    "log_details_file": "./logs/log_2_2025-11-24_21-02-57.log",
+    "end_date": "2025-11-24_21-13-57",
+    "queries_size": 5689,
+    "dictionary_size": 90510,
+    "trained_period": "0h, 10mins, 56secs",
+    "epochs": 8,
+    "last_faiss_recall@15": 0.8943575320794516,
+    "last_avg_acc_5": 0.9992977528089888,
+    "last_avg_mrr": 0.9954362993829706,
+    "last_avg_loss": 0.03334366543325753,
+    "result_encoder_dir": "./output/encoder_2/",
+    "eval_started": true
   }
 ]
