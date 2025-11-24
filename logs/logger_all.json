@@ -36,5 +36,13 @@
     "last_avg_loss": 0.03334366543325753,
     "result_encoder_dir": "./output/encoder_4/",
     "eval_started": true
+  },
+  {
+    "id": 5,
+    "start_time": "2025-11-25_00-51-31",
+    "train_started": true,
+    "finished": false,
+    "training_log_name": "test_grad_accum",
+    "log_details_file": "./logs/log_5_2025-11-25_00-51-31.log"
   }
 ]
