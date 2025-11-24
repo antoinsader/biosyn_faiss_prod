@@ -281,7 +281,7 @@ if __name__=="__main__":
 
 
     
-    if not cfg.tokenize.skip_test_queries:
+    if not cfg.tokenize.skip_tokenize_test_queries:
 
         test_tokens_paths = TokensPaths(cfg, dictionary_key='dictionary', queries_key='test_queries')
 
