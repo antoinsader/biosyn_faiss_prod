@@ -164,8 +164,8 @@ class Trainer:
             epoch_margin += batch_margin
             n_batches += 1
 
-            if i % 100 == 0:
-                self.logger.log_event(f"Training stats - batch {i}", message=f"Loss: {loss.item():.4f}", log_memory=True, epoch=epoch)
+            # if i % 100 == 0:
+            #     self.logger.log_event(f"Training stats - batch {i}", message=f"Loss: {loss.item():.4f}", log_memory=True, epoch=epoch)
 
 
         avg_loss = (epoch_loss / max(1, n_batches))
