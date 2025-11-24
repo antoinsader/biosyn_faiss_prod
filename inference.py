@@ -65,11 +65,13 @@ def main():
     # Load encoder
     print(f"Loading encoder from: {cfg.paths.result_encoder_dir}")
     encoder = MyEncoder(cfg)
+    encoder.load_state(cfg.paths.result_encoder_dir)
     encoder.encoder.eval()
     
     # Load tokenizer
     print("Loading tokenizer...")
     tokenizer = AutoTokenizer.from_pretrained(cfg.model.model_name, use_fast=True)
+    tokenizer.add_special_tokens(cfg.tokenize.special_tokens)
     
     # Tokenize mention
     print(f"\nProcessing mention: '{cfg.inference.mention}'")
