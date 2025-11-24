@@ -129,6 +129,7 @@ class ModelConfig:
     pooling : str =  'hybrid' #[mean, cls, hybrid]
     normalize: bool = True
     hidden_size: int = 768
+    encoding_type : str = "cls_and_between_spans" # [cls_only, between_spans, spans_only, cls_and_between_spans, cls_and_spans]
 
 
 @dataclass
