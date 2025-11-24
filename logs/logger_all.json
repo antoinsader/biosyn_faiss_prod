@@ -3,6 +3,7 @@
     "id": 1,
     "start_time": "2025-11-23_22-06-17",
     "train_started": true,
+
     "finished": true,
     "log_details_file": "./logs/log_1_2025-11-23_22-06-17.log",
     "end_date": "2025-11-24_18-58-19",
@@ -41,3 +42,4 @@
     "log_details_file": "./logs/log_eval_2_2025-11-24_19-03-16.log"
   }
 ]
+
