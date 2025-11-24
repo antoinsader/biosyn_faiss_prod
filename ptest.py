@@ -56,6 +56,23 @@ raw_tokens = tokenizer.convert_ids_to_tokens(tokens_to_decode)
 print(decoded_text)
 print(raw_tokens)
 
+tokens_paths  = TokensPaths(cfg, dictionary_key='dictionary', queries_key='test_queries')
+my_encoder = MyEncoder(cfg)
+dataset = MyDataset(tokens_paths, cfg)
+
+idx = 5
+inp = torch.as_tensor(dataset.queries_input_ids[idx], device=device)
+att = torch.as_tensor(dataset.queries_attention_mask[idx], device=device)
+
+tokens_to_decode = inp[att == 1].tolist()
+decoded_text = tokenizer.decode(tokens_to_decode, skip_special_tokens=True)
+raw_tokens = tokenizer.convert_ids_to_tokens(tokens_to_decode)
+
+print(decoded_text)
+print(raw_tokens)
+
+
+
 # train_queries = load_queries(
 #             data_dir=cfg.paths.queries_raw_dir,
 #             queries_max_length=queries_max_length,
@@ -64,11 +81,11 @@ print(raw_tokens)
 #             tokenizer=tokenizer)
 
 
-(tokens_size, max_length ) = tokens_paths.queries_shape
-N = tokens_size
+# (tokens_size, max_length ) = tokens_paths.queries_shape
+# N = tokens_size
 
-query_inputs = dataset.queries_input_ids
-query_att = dataset.queries_attention_mask
+# query_inputs = dataset.queries_input_ids
+# query_att = dataset.queries_attention_mask
 
 
 
