@@ -30,10 +30,10 @@ python -m venv myenv
 source myenv/bin/activate
 
 # === Step 5: Install dependencies ===
-pip install --upgrade pip
-pip install --index-url https://download.pytorch.org/whl/cu121 torch
-pip install faiss-gpu-cu12
-pip install tqdm transformers requests psutil torchmetrics
+pip install --upgrade pip &&
+pip install --index-url https://download.pytorch.org/whl/cu121 torch &&
+pip install faiss-gpu-cu12 &&
+pip install tqdm transformers requests psutil torchmetrics &&
 pip install datasets
 
 echo "Setup complete!"
