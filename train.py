@@ -157,8 +157,10 @@ class Trainer:
             accuracy_5, mrr, loss = self.train_one_batch(data_loader_item)
             epoch_accuracy_5 += accuracy_5
             epoch_mrr += mrr
-            epoch_loss += loss
+            epoch_loss += loss.item()
             n_batches += 1
+            if i % 100 == 0:
+                self.logger.log_event(f"Training stats - batch {i}", message=f"Loss: {loss.item():.4f}", log_memory=True, epoch=epoch)
 
 
         avg_loss = epoch_loss / max(1, n_batches)
