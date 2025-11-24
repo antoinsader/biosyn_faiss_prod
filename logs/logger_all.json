@@ -3,8 +3,19 @@
     "id": 1,
     "start_time": "2025-11-23_22-06-17",
     "train_started": true,
-    "finished": false,
-    "log_details_file": "./logs/log_1_2025-11-23_22-06-17.log"
+    "finished": true,
+    "log_details_file": "./logs/log_1_2025-11-23_22-06-17.log",
+    "end_date": "2025-11-24_18-58-19",
+    "training_log_name": "small dictionary with annotating and injecting",
+    "queries_size": 5689,
+    "dictionary_size": 90510,
+    "trained_period": "0h, 6mins, 57secs",
+    "epochs": 5,
+    "last_faiss_recall@15": 0.9223062049569344,
+    "last_avg_acc_5": 0.9943820224719101,
+    "last_avg_mrr": 0.9798549453863937,
+    "last_avg_loss": 0.09435153011954651,
+    "result_encoder_dir": "./output/encoder_1/"
   },
   {
     "id": 1,
@@ -12,16 +23,21 @@
     "train_started": true,
     "finished": true,
     "log_details_file": "./logs/log_1_2025-11-23_22-06-17.log",
-    "end_date": "2025-11-24_07-59-21",
+    "end_date": "2025-11-24_18-58-19",
     "training_log_name": "small dictionary with annotating and injecting",
     "queries_size": 5689,
     "dictionary_size": 90510,
-    "trained_period": "0h, 10mins, 38secs",
-    "epochs": 8,
-    "last_faiss_recall@15": 0.9597468799437511,
-    "last_avg_acc_5": 0.9992977528089888,
-    "last_avg_mrr": 0.9964584594362238,
-    "last_avg_loss": 0.020710680215538405,
+    "trained_period": "0h, 6mins, 57secs",
+    "epochs": 5,
+    "last_faiss_recall@15": 0.9223062049569344,
+    "last_avg_acc_5": 0.9943820224719101,
+    "last_avg_mrr": 0.9798549453863937,
+    "last_avg_loss": 0.09435153011954651,
     "result_encoder_dir": "./output/encoder_1/"
+  },
+  {
+    "id": 2,
+    "eval_started": true,
+    "log_details_file": "./logs/log_eval_2_2025-11-24_19-03-16.log"
   }
 ]
