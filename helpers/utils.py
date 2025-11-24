@@ -35,6 +35,7 @@ def compute_metrics(scores, targets, k=5):
 
 
         _, sorted_indices = scores.sort(descending=True, dim=1)
+        sorted_targets = targets.gather(1, sorted_indices)
         hits = (sorted_targets > 0.5)
 
         acc_at_k = hits[:, :k].any(dim=1).float().mean()
