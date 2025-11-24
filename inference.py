@@ -108,8 +108,7 @@ def main():
     candidate_idxs = candidate_idxs[0]  # Get first (and only) query's results
     
     # Load dictionary CUIs
-    print(f"Loading dictionary CUIs from: {cfg.paths.dictionary_cuis}")
-    dictionary_cuis = np.load(cfg.paths.dictionary_cuis)
+    dictionary_cuis = np.load(tokens_paths.dictionary_cuis_path)
     
     # Load dictionary names (optional, for display)
     try:
