@@ -277,6 +277,8 @@ Each epoch executes the following pipeline:
 ## Evaluation:
 
 For eval you have to specify --result_encoder_dir which is encoder output dir to be evaluated.
+The evaluation would be using the test set tokenized in the tokenization step.
+
 Execution:
 
 ```bash

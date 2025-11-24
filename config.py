@@ -73,7 +73,7 @@ class TokensConfig:
 
     skip_tokenize_dictionary: bool = False
     skip_tokenize_queries: bool = False
-    skip_tokenizing_test_queries :bool=False
+    skip_tokenize_test_queries :bool=False
     split_train_queries :bool=False
     test_split_percentage: float = 0.8
 
