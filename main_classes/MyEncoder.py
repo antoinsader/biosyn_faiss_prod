@@ -28,13 +28,21 @@ class MyEncoder():
         encoder = AutoModel.from_pretrained(self.cfg.model_name, use_safetensors=True)
 
         tokenizer_meta_path  = cfg.paths.tokenizer_meta_path
+        
+        
+        if not os.path.exists(tokenizer_meta_path):
+            if os.path.exists(os.path.join(cfg.paths.result_encoder_dir, "tokenizer_meta.json") ):
+                tokenizer_meta_path = os.path.join(cfg.paths.result_encoder_dir, "tokenizer_meta.json")
+            else:
+                raise Exception("tokenizer_meta_path does not exist")
+    
         with open(tokenizer_meta_path) as f:
             tokenizer_meta = json.load(f)
         tokenizer_len = tokenizer_meta['len_tokenizer']
         encoder.resize_token_embeddings(tokenizer_len)
-
         self.mention_start_token_id = tokenizer_meta["mention_start_token_id"]
         self.mention_end_token_id = tokenizer_meta["mention_end_token_id"]
+
 
         self.encoder = encoder.to(self.device)
         self.hidden_size = self.encoder.config.hidden_size

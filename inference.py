@@ -7,48 +7,8 @@ from transformers import AutoTokenizer
 from main_classes.MyEncoder import MyEncoder
 from main_classes.MyFaiss import MyFaiss
 from helpers.Data import TokensPaths, MyDataset
-from config import GlobalConfig
+from config import GlobalConfig, inference_parse_args
 
-
-def parse_args():
-    """
-    Parse input arguments for inference
-    """
-    parser = argparse.ArgumentParser(description='BioSyn-FAISS Inference')
-    
-    # Required arguments
-    parser.add_argument('--mention', type=str, required=True, 
-                        help='Medical mention/entity to normalize (e.g., "breast cancer")')
-    parser.add_argument('--model_dir', type=str, required=True,
-                        help='Path to trained encoder directory (e.g., ./output/encoder_1/)')
-    
-    # Optional arguments
-    parser.add_argument('--faiss_index', type=str, default=None,
-                        help='Path to FAISS index file (default: <model_dir>/faiss_index.faiss)')
-    parser.add_argument('--dictionary_cuis', type=str, default='./data/tokens/_dictionary_cuis.npy',
-                        help='Path to dictionary CUIs file')
-    parser.add_argument('--topk', type=int, default=5,
-                        help='Number of top candidates to retrieve (default: 5)')
-    parser.add_argument('--use_cuda', action='store_true', default=True,
-                        help='Use CUDA if available (default: True)')
-    parser.add_argument('--max_length', type=int, default=75,
-                        help='Max tokenization length (default: 75)')
-    
-    args = parser.parse_args()
-    
-    # Default FAISS index path
-    if args.faiss_index is None:
-        args.faiss_index = os.path.join(args.model_dir, 'faiss_index.faiss')
-    
-    # Validate paths
-    if not os.path.isdir(args.model_dir):
-        raise ValueError(f"Model directory does not exist: {args.model_dir}")
-    if not os.path.exists(args.faiss_index):
-        raise ValueError(f"FAISS index not found: {args.faiss_index}")
-    if not os.path.exists(args.dictionary_cuis):
-        raise ValueError(f"Dictionary CUIs file not found: {args.dictionary_cuis}")
-    
-    return args
 
 
 def load_dictionary_names(dictionary_path='./data/raw/train_dictionary.txt'):
@@ -71,53 +31,45 @@ def tokenize_mention(mention, tokenizer, max_length=75):
     """
     Tokenize a single mention
     """
-    # Add special tokens for mention boundaries
-    mention_start = tokenizer.convert_tokens_to_ids('[MS]')
-    mention_end = tokenizer.convert_tokens_to_ids('[ME]')
+
     
-    # Simple tokenization: [MS] mention [ME]
-    tokens = tokenizer.encode(mention, add_special_tokens=False)
-    tokens = [mention_start] + tokens + [mention_end]
+
     
-    # Pad or truncate
-    if len(tokens) > max_length:
-        tokens = tokens[:max_length]
-    
-    # Create input_ids and attention_mask
-    input_ids = tokens + [tokenizer.pad_token_id] * (max_length - len(tokens))
-    attention_mask = [1] * len(tokens) + [0] * (max_length - len(tokens))
+    encoded = tokenizer(
+        mention,
+        padding="max_length",
+        truncation=True,
+        max_length=max_length,
+        return_tensors="pt"
+    )
     
     return {
-        'input_ids': torch.tensor([input_ids], dtype=torch.long),
-        'attention_mask': torch.tensor([attention_mask], dtype=torch.long)
+        'input_ids': encoded['input_ids'],
+        'attention_mask': encoded['attention_mask']
     }
 
 
-def main(args):
+def main():
     # Setup device
-    use_cuda = args.use_cuda and torch.cuda.is_available()
+    use_cuda = torch.cuda.is_available()
     device = "cuda" if use_cuda else "cpu"
     print(f"Using device: {device}")
     
     # Load configuration
-    cfg = GlobalConfig()
-    cfg.model.model_name = args.model_dir
-    cfg.paths.result_encoder_dir = args.model_dir
-    cfg.paths.faiss_path = args.faiss_index
+    cfg = inference_parse_args()
     
     # Load encoder
-    print(f"Loading encoder from: {args.model_dir}")
+    print(f"Loading encoder from: {cfg.paths.result_encoder_dir}")
     encoder = MyEncoder(cfg)
-    encoder.to(device)
-    encoder.eval()
+    encoder.encoder.eval()
     
     # Load tokenizer
     print("Loading tokenizer...")
-    tokenizer = AutoTokenizer.from_pretrained(args.model_dir, use_fast=True)
+    tokenizer = AutoTokenizer.from_pretrained(cfg.model.model_name, use_fast=True)
     
     # Tokenize mention
-    print(f"\nProcessing mention: '{args.mention}'")
-    mention_tokens = tokenize_mention(args.mention, tokenizer, args.max_length)
+    print(f"\nProcessing mention: '{cfg.inference.mention}'")
+    mention_tokens = tokenize_mention(cfg.inference.mention, tokenizer, cfg.tokenize.queries_max_length)
     mention_tokens = {k: v.to(device) for k, v in mention_tokens.items()}
     
     # Get mention embedding
@@ -131,7 +83,7 @@ def main(args):
         )
     
     # Load FAISS index
-    print(f"Loading FAISS index from: {args.faiss_index}")
+    print(f"Loading FAISS index from: {cfg.paths.faiss_path}")
     
     # Create a minimal dataset and tokens_paths for FAISS
     tokens_paths = TokensPaths(cfg, dictionary_key='dictionary', queries_key='train_queries')
@@ -139,26 +91,25 @@ def main(args):
     
     faiss = MyFaiss(
         cfg, 
-        save_index_path=args.faiss_index,
+        save_index_path=cfg.paths.faiss_path,
         dataset=dataset,
         tokens_paths=tokens_paths,
         encoder=encoder
     )
-    faiss.load_faiss_index(args.faiss_index)
-    
+    # faiss.load_faiss_index(cfg.paths.faiss_path)
+    faiss.build_faiss(cfg.faiss.build_batch_size)
     # Search FAISS
-    print(f"Searching for top-{args.topk} candidates...")
+    print(f"Searching for top-{cfg.inference.topk} candidates...")
     if use_cuda:
         mention_embed = mention_embed.contiguous()
     else:
         mention_embed = mention_embed.cpu().numpy().astype(np.float32)
     
-    _, candidate_idxs = faiss.faiss_index.search(mention_embed, args.topk)
+    _, candidate_idxs = faiss.faiss_index.search(mention_embed, cfg.inference.topk)
     candidate_idxs = candidate_idxs[0]  # Get first (and only) query's results
     
     # Load dictionary CUIs
-    print(f"Loading dictionary CUIs from: {args.dictionary_cuis}")
-    dictionary_cuis = np.load(args.dictionary_cuis)
+    dictionary_cuis = np.load(tokens_paths.dictionary_cuis_path)
     
     # Load dictionary names (optional, for display)
     try:
@@ -170,7 +121,7 @@ def main(args):
     
     # Display results
     print(f"\n{'='*80}")
-    print(f"Top-{args.topk} Candidates for: '{args.mention}'")
+    print(f"Top-{cfg.inference.topk} Candidates for: '{cfg.inference.mention}'")
     print(f"{'='*80}\n")
     
     results = []
@@ -192,5 +143,4 @@ def main(args):
 
 
 if __name__ == '__main__':
-    args = parse_args()
-    results = main(args)
+    results = main()
