@@ -28,18 +28,18 @@ device = "cuda"    if use_cuda else "cpu"
 
 tokens_paths  = TokensPaths(cfg, dictionary_key='dictionary', queries_key='train_queries')
 tokenizer = AutoTokenizer.from_pretrained(cfg.model.model_name, use_fast=True)
-# tokenizer.add_special_tokens(cfg.tokenize.special_tokens)
+tokenizer.add_special_tokens(cfg.tokenize.special_tokens)
 
-# mention_start_token_id  = tokenizer.convert_tokens_to_ids(cfg.tokenize.special_tokens_dict["mention_start"])
-# mention_end_token_id  = tokenizer.convert_tokens_to_ids(cfg.tokenize.special_tokens_dict["mention_end"])
+mention_start_token_id  = tokenizer.convert_tokens_to_ids(cfg.tokenize.special_tokens_dict["mention_start"])
+mention_end_token_id  = tokenizer.convert_tokens_to_ids(cfg.tokenize.special_tokens_dict["mention_end"])
 
-# meta = {
-#     "len_tokenizer": len(tokenizer), 
-#     "mention_start_token_id": mention_start_token_id,
-#     "mention_end_token_id": mention_end_token_id
-# }
-# with open(cfg.paths.tokenizer_meta_path, "w") as f:
-#     json.dump(meta, f)
+meta = {
+    "len_tokenizer": len(tokenizer), 
+    "mention_start_token_id": mention_start_token_id,
+    "mention_end_token_id": mention_end_token_id
+}
+with open(cfg.paths.tokenizer_meta_path, "w") as f:
+    json.dump(meta, f)
 
 
 my_encoder = MyEncoder(cfg)
