@@ -268,16 +268,86 @@ Each epoch executes the following pipeline:
 
 
 
+
 ## Evaluation:
 
 For eval you have to specify --result_encoder_dir which is encoder output dir to be evaluated.
 Execution:
 
 ```bash
-    python eval.py --result_encoder_dir='./output/encoder_1/'
+python eval.py --result_encoder_dir='./output/encoder_1/'
 ```
 
 Will log top-k accuracy and MRR for retrieval scores
+
+---
+
+## Inference
+
+Use a trained model to normalize individual medical mentions interactively.
+
+### Usage
+
+```bash
+python inference.py \
+    --mention "breast cancer" \
+    --model_dir ./output/encoder_1/
+```
+
+### Arguments
+
+| Argument | Required | Description | Default |
+|-----------|----------|-------------|---------|
+| `--mention` | ✅ | Medical mention to normalize | N/A |
+| `--model_dir` | ✅ | Path to trained encoder directory | N/A |
+| `--faiss_index` | ❌ | Path to FAISS index | `<model_dir>/faiss_index.faiss` |
+| `--topk` | ❌ | Number of candidates to return | 5 |
+
+### Example Output
+
+```
+Top-5 Candidates for: 'breast cancer'
+================================================================================
+
+1. CUI: MESH:D001943
+   Name: Breast Neoplasms
+
+2. CUI: SNOMEDCT:254837009
+   Name: Malignant neoplasm of breast
+```
+
+---
+
+## Complete Workflow
+
+### 📊 Training Output Structure
+
+After running `train.py`, you get:
+
+```
+./output/encoder_X/
+├── encoder.pth              ← Trained encoder weights
+├── projection.pth           ← Projection layer weights  
+└── faiss_index.faiss        ← FAISS index for candidates
+
+./logs/
+├── logger_all.json          ← All experiments metadata
+└── log_X_<date>.log         ← Detailed training logs
+```
+
+### 🔄 Usage Flow
+
+```
+1. TOKENIZE      → python tokenizer.py
+                    ↓
+2. TRAIN         → python train.py --training_log_name "my_experiment"
+                    ↓ (produces ./output/encoder_X/)
+3. EVALUATE      → python eval.py --result_encoder_dir ./output/encoder_X/
+                    ↓
+4. INFERENCE     → python inference.py --mention "diabetes" --model_dir ./output/encoder_X/
+```
+
+All model artifacts are in **one directory** (`./output/encoder_X/`), making it easy to use across eval and inference!
 
 ---
 
@@ -289,3 +359,4 @@ Will log top-k accuracy and MRR for retrieval scores
 ---
 
 **Author:** Starky
+```
