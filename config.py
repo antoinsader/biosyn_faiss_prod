@@ -179,8 +179,8 @@ class TrainingConfig:
 
 @dataclass
 class FaissConfig:
-    build_batch_size: int = 4096
-    search_batch_size: int = 4096
+    build_batch_size: int = 6096
+    search_batch_size: int = 6096
 
     save_index_path = None
 
