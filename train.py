@@ -56,7 +56,7 @@ class Trainer:
 
 
 
-    def train_one_batch(self, data_loader_item):
+    def train_one_batch(self, data_loader_item, batch_idx):
         """
             What we will do in one batch is:
                 - extracting batch_x, batch_y from the dataloader item
@@ -66,24 +66,31 @@ class Trainer:
                 - We do backpropogation, scale, optimize, update and step
                 - We calculate accuracy and mrr metrics for the batch
         """
-        self.model.optimizer.zero_grad(set_to_none=True)
+        # self.model.optimizer.zero_grad(set_to_none=True) # Moved to step logic
+        
         with torch.amp.autocast(device_type="cuda", enabled=(self.use_cuda and self.cfg.train.use_amp)):
             batch_x, batch_y = data_loader_item
             batch_query_tokens, batch_candidates_tokens = batch_x
             batch_scores = self.model(batch_query_tokens, batch_candidates_tokens)
             loss = self.model.get_loss(batch_scores, batch_y)
 
+        # Scale loss
+        loss = loss / self.cfg.train.gradient_accumulation_steps
         self.scaler.scale(loss).backward()
-        self.scaler.unscale_(self.model.optimizer)
-        torch.nn.utils.clip_grad_norm_(self.model.encoder.encoder.parameters(), max_norm=1.0)
+        
+        # Step only after accumulation steps
+        if (batch_idx + 1) % self.cfg.train.gradient_accumulation_steps == 0:
+            self.scaler.unscale_(self.model.optimizer)
+            torch.nn.utils.clip_grad_norm_(self.model.encoder.encoder.parameters(), max_norm=1.0)
 
-
-        self.scaler.step(self.model.optimizer)
-        self.scaler.update()
-        self.scheduler.step()
+            self.scaler.step(self.model.optimizer)
+            self.scaler.update()
+            self.scheduler.step()
+            self.model.optimizer.zero_grad(set_to_none=True)
 
         accuracy_5, mrr, batch_margin = compute_metrics(batch_scores, batch_y, k=5)
-        return loss.detach(), accuracy_5, mrr, batch_margin
+        # Return unscaled loss for logging
+        return loss.detach() * self.cfg.train.gradient_accumulation_steps, accuracy_5, mrr, batch_margin
 
 
 
@@ -149,8 +156,9 @@ class Trainer:
         epoch_loss, epoch_accuracy_5, epoch_mrr, epoch_margin = 0.0, 0.0, 0.0, 0.0
         n_batches = 0
 
+        self.model.optimizer.zero_grad(set_to_none=True) # Ensure grads are zero at start of epoch
         for i, data_loader_item in tqdm(enumerate(my_loader), total=len(my_loader), desc=f"epoch@{epoch} - Training batches"):
-            loss, accuracy_5, mrr, batch_margin = self.train_one_batch(data_loader_item)
+            loss, accuracy_5, mrr, batch_margin = self.train_one_batch(data_loader_item, i)
             
             if torch.is_tensor(loss):
                 epoch_loss += loss.item()

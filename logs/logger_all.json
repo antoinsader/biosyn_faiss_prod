@@ -120,5 +120,10 @@
     "finished": false,
     "training_log_name": "small dictionary embeding cls and between topk=50",
     "log_details_file": "./logs/log_9_2025-11-24_23-26-01.log"
+    "start_time": "2025-11-25_00-51-31",
+    "train_started": true,
+    "finished": false,
+    "training_log_name": "test_grad_accum",
+    "log_details_file": "./logs/log_5_2025-11-25_00-51-31.log"
   }
 ]

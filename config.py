@@ -171,6 +171,7 @@ class TrainingConfig:
 
     freeze_lower_layer_epoch_max:int=2
     enable_gradient_checkpoint:bool=False
+    gradient_accumulation_steps: int = 1
 
 
 
