@@ -58,6 +58,7 @@ def parse_args():
     parser.add_argument('--debug_cpu', action='store_true', help='Force CPU mode for debugging on non-CUDA machines')
     parser.add_argument('--dry_run', action='store_true', help='Run a few batches and exit')
     parser.add_argument('--use_small_dictionary', action='store_true', help='Use small dictionary')
+    parser.add_argument('--use_cached_candidates', action='store_true', help='Use cached dictionary embeddings for training (Faster, but freezes doc encoder)')
 
     return parser.parse_args()
 
@@ -162,14 +163,13 @@ class FastDataset(Dataset):
         with open(path) as f:
             return tuple(json.load(f)["shape"])
 
-    def set_candidates(self, candidates_indices):
-        """
-        candidates_indices: (num_queries, topk)
-        """
-        self.candidates = candidates_indices
+        self.dict_embeddings = None # Optional: cached embeddings
 
-    def __len__(self):
-        return len(self.queries_input_ids)
+    def set_dict_embeddings(self, embeddings):
+        """
+        embeddings: numpy array (N, H)
+        """
+        self.dict_embeddings = embeddings
 
     def __getitem__(self, idx):
         # Query
@@ -181,23 +181,28 @@ class FastDataset(Dataset):
         assert self.candidates is not None, "Candidates must be set before training"
         cand_idxs = self.candidates[idx]
             
-        # Optimization: We can inject hard negatives/positives here if we had the logic.
-        # For now, stick to retrieved candidates.
-        
-        c_ids = self.dict_input_ids[cand_idxs]
-        c_att = self.dict_att_mask[cand_idxs]
-        c_cuis = self.dict_cuis[cand_idxs]
-        
         # Labels: 1 if candidate CUI matches Query CUI, 0 otherwise
+        c_cuis = self.dict_cuis[cand_idxs]
         labels = (c_cuis == q_cui).astype(np.float32)
         
-        return {
+        item = {
             "query_input_ids": torch.tensor(q_ids, dtype=torch.long),
             "query_attention_mask": torch.tensor(q_att, dtype=torch.long),
-            "cand_input_ids": torch.tensor(c_ids, dtype=torch.long),
-            "cand_attention_mask": torch.tensor(c_att, dtype=torch.long),
             "labels": torch.tensor(labels, dtype=torch.float),
         }
+
+        if self.dict_embeddings is not None:
+            # Use cached embeddings
+            c_embs = self.dict_embeddings[cand_idxs]
+            item["cand_embeddings"] = torch.tensor(c_embs, dtype=torch.float)
+        else:
+            # Use tokens
+            c_ids = self.dict_input_ids[cand_idxs]
+            c_att = self.dict_att_mask[cand_idxs]
+            item["cand_input_ids"] = torch.tensor(c_ids, dtype=torch.long)
+            item["cand_attention_mask"] = torch.tensor(c_att, dtype=torch.long)
+            
+        return item
 
 # ==========================================
 # MODEL
@@ -259,24 +264,31 @@ class OptimizedBioSynModel(nn.Module):
         # Normalize
         return F.normalize(projected, p=2, dim=1)
 
-    def forward(self, query_ids, query_mask, cand_ids, cand_mask):
+    def forward(self, query_ids, query_mask, cand_ids=None, cand_mask=None, cand_embeddings=None):
         """
         Forward pass for training.
         query: (B, L)
-        cand: (B, K, L)
+        cand_ids: (B, K, L) - Optional if cand_embeddings provided
+        cand_embeddings: (B, K, H) - Optional
         """
-        B, K, L = cand_ids.shape
-        
-        # Flatten candidates
-        cand_ids_flat = cand_ids.view(B * K, L)
-        cand_mask_flat = cand_mask.view(B * K, L)
-        
-        # Embed
+        # Embed Query
         q_emb = self.get_embedding(query_ids, query_mask) # (B, H)
-        c_emb = self.get_embedding(cand_ids_flat, cand_mask_flat) # (B*K, H)
-        
-        # Reshape candidates
-        c_emb = c_emb.view(B, K, -1) # (B, K, H)
+
+        if cand_embeddings is not None:
+            # Use cached embeddings (No Gradients for Candidate Encoder)
+            c_emb = cand_embeddings
+        else:
+            # Encode Candidates
+            B, K, L = cand_ids.shape
+            
+            # Flatten candidates
+            cand_ids_flat = cand_ids.view(B * K, L)
+            cand_mask_flat = cand_mask.view(B * K, L)
+            
+            c_emb = self.get_embedding(cand_ids_flat, cand_mask_flat) # (B*K, H)
+            
+            # Reshape candidates
+            c_emb = c_emb.view(B, K, -1) # (B, K, H)
         
         # Compute Scores (Cosine Similarity)
         # q_emb: (B, 1, H)
@@ -337,15 +349,17 @@ class FaissIndexer:
             train_size = min(N, 65536)
             index.train(embeddings[:train_size])
             
-            # Add
-            logger.info("Adding vectors...")
-            index.add(embeddings)
-            
-            # Move to GPU
-            logger.info("Moving index to GPU...")
+            # Move to GPU *before* adding vectors to avoid massive CPU->GPU copy
+            logger.info("Moving empty index to GPU...")
             co = faiss.GpuClonerOptions()
             co.useFloat16 = True 
             self.index = faiss.index_cpu_to_gpu(self.res, 0, index, co)
+            
+            # Add to GPU in batches
+            logger.info("Adding vectors to GPU index...")
+            batch_size = 65536
+            for i in range(0, N, batch_size):
+                self.index.add(embeddings[i:i+batch_size])
             
     def search(self, queries, k):
         """
@@ -448,7 +462,15 @@ def main():
             
             dictionary_embs = np.concatenate(all_embs, axis=0)
             indexer.build(dictionary_embs)
-            del dictionary_embs, all_embs
+            
+            if args.use_cached_candidates:
+                logger.info("Using cached dictionary embeddings for training...")
+                dataset.set_dict_embeddings(dictionary_embs)
+                # Do NOT delete dictionary_embs if we need them for training
+            else:
+                del dictionary_embs
+                
+            del all_embs
             if not args.debug_cpu: torch.cuda.empty_cache()
             log_memory("After FAISS Build")
 
@@ -468,7 +490,8 @@ def main():
             batch_size=args.faiss_search_batch if not args.debug_cpu else 32, 
             shuffle=False, 
             num_workers=args.num_workers if not args.debug_cpu else 0,
-            pin_memory=not args.debug_cpu
+            pin_memory=not args.debug_cpu,
+            persistent_workers=(args.num_workers > 0)
         )
         
         all_query_embs = []
@@ -499,7 +522,8 @@ def main():
             shuffle=True,
             num_workers=args.num_workers if not args.debug_cpu else 0,
             pin_memory=not args.debug_cpu,
-            prefetch_factor=2 if args.num_workers > 0 else None
+            prefetch_factor=2 if args.num_workers > 0 else None,
+            persistent_workers=(args.num_workers > 0)
         )
         
         total_loss = 0
@@ -509,13 +533,21 @@ def main():
             # Move to device
             q_ids = batch['query_input_ids'].to(device, non_blocking=True)
             q_mask = batch['query_attention_mask'].to(device, non_blocking=True)
-            c_ids = batch['cand_input_ids'].to(device, non_blocking=True)
-            c_mask = batch['cand_attention_mask'].to(device, non_blocking=True)
             labels = batch['labels'].to(device, non_blocking=True)
+            
+            c_ids = None
+            c_mask = None
+            c_embs = None
+            
+            if 'cand_embeddings' in batch:
+                c_embs = batch['cand_embeddings'].to(device, non_blocking=True)
+            else:
+                c_ids = batch['cand_input_ids'].to(device, non_blocking=True)
+                c_mask = batch['cand_attention_mask'].to(device, non_blocking=True)
             
             # Forward
             with torch.amp.autocast(device_type="cuda" if not args.debug_cpu else "cpu", enabled=args.use_amp and not args.debug_cpu):
-                scores = model(q_ids, q_mask, c_ids, c_mask)
+                scores = model(q_ids, q_mask, cand_ids=c_ids, cand_mask=c_mask, cand_embeddings=c_embs)
                 
                 # Loss (Marginal NLL)
                 # scores: (B, K)

@@ -172,7 +172,7 @@ class TrainingConfig:
     freeze_lower_layer_epoch_max:int=2
     enable_gradient_checkpoint:bool=False
     gradient_accumulation_steps: int = 1
-    update_faiss_every_n_epochs: int = 2
+    update_faiss_every_n_epochs: int = 1
     metric_compute_interval: int = 500
 
 
