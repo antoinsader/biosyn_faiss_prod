@@ -45,8 +45,8 @@ def parse_args():
     parser.add_argument('--grad_acc_steps', type=int, default=1, help='Gradient accumulation steps')
     
     # FAISS Params
-    parser.add_argument('--faiss_build_batch', type=int, default=4096, help='Batch size for building FAISS index')
-    parser.add_argument('--faiss_search_batch', type=int, default=4096, help='Batch size for searching FAISS')
+    parser.add_argument('--faiss_build_batch', type=int, default=1024, help='Batch size for building FAISS index')
+    parser.add_argument('--faiss_search_batch', type=int, default=1024, help='Batch size for searching FAISS')
     parser.add_argument('--update_faiss_every', type=int, default=1, help='Update FAISS index every N epochs')
     
     # Hard Negatives
@@ -57,6 +57,7 @@ def parse_args():
     parser.add_argument('--training_log_name', type=str, required=True)
     parser.add_argument('--debug_cpu', action='store_true', help='Force CPU mode for debugging on non-CUDA machines')
     parser.add_argument('--dry_run', action='store_true', help='Run a few batches and exit')
+    parser.add_argument('--use_small_dictionary', action='store_true', help='Use small dictionary')
 
     return parser.parse_args()
 
@@ -404,7 +405,8 @@ def main():
     scaler = torch.amp.GradScaler(enabled=args.use_amp and not args.debug_cpu)
 
     # Dataset
-    dataset = FastDataset(args.tokens_dir, debug_cpu=args.debug_cpu)
+    dict_key = 'small_dictionary' if args.use_small_dictionary else 'dictionary'
+    dataset = FastDataset(args.tokens_dir, dictionary_key=dict_key, debug_cpu=args.debug_cpu)
     log_memory("After Dataset Load")
     
     # FAISS Indexer
@@ -436,7 +438,7 @@ def main():
             
             all_embs = []
             with torch.no_grad(), torch.amp.autocast(device_type="cuda" if not args.debug_cpu else "cpu", enabled=args.use_amp and not args.debug_cpu):
-                for batch in dict_loader:
+                for batch in tqdm(dict_loader, desc="Encoding Dictionary"):
                     ids, mask = batch
                     ids, mask = ids.to(device), mask.to(device)
                     emb = model.get_embedding(ids, mask)
