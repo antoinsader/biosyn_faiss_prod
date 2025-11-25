@@ -199,7 +199,7 @@ class OptimizedBioSynModel(nn.Module):
         self.mention_end_id = meta["mention_end_token_id"]
         
         # Load Encoder
-        self.encoder = AutoModel.from_pretrained(model_name)
+        self.encoder = AutoModel.from_pretrained(model_name, use_safetensors=True)
         self.encoder.resize_token_embeddings(meta['len_tokenizer'])
         
         # Projection (assuming CLS + Between Spans strategy from original config)
