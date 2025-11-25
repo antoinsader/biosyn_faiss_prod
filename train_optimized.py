@@ -45,7 +45,7 @@ def parse_args():
     parser.add_argument('--grad_acc_steps', type=int, default=1, help='Gradient accumulation steps')
     
     # FAISS Params
-    parser.add_argument('--faiss_build_batch', type=int, default=16384, help='Batch size for building FAISS index')
+    parser.add_argument('--faiss_build_batch', type=int, default=4096, help='Batch size for building FAISS index')
     parser.add_argument('--faiss_search_batch', type=int, default=4096, help='Batch size for searching FAISS')
     parser.add_argument('--update_faiss_every', type=int, default=1, help='Update FAISS index every N epochs')
     
@@ -69,6 +69,21 @@ logging.basicConfig(
     level=logging.INFO,
 )
 logger = logging.getLogger(__name__)
+
+def setup_file_logging(log_name):
+    os.makedirs("./logs", exist_ok=True)
+    file_handler = logging.FileHandler(f"./logs/{log_name}.log")
+    formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s -   %(message)s")
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+
+def log_memory(stage=""):
+    if torch.cuda.is_available():
+        allocated = torch.cuda.memory_allocated() / 1024**3
+        reserved = torch.cuda.memory_reserved() / 1024**3
+        logger.info(f"[{stage}] GPU Memory: Allocated={allocated:.2f}GB, Reserved={reserved:.2f}GB")
+
 
 # ==========================================
 # DATASET
@@ -354,6 +369,7 @@ class FaissIndexer:
 
 def main():
     args = parse_args()
+    setup_file_logging(args.training_log_name)
     
     # Setup Device
     if args.debug_cpu:
@@ -373,6 +389,7 @@ def main():
     logger.info("Initializing Model...")
     model = OptimizedBioSynModel(args.model_name, args.tokenizer_meta_path, device=device)
     model.to(device)
+    log_memory("After Model Init")
     
     # Compile Model (PyTorch 2.0+)
     if args.compile_model and not args.debug_cpu:
@@ -388,6 +405,7 @@ def main():
 
     # Dataset
     dataset = FastDataset(args.tokens_dir, debug_cpu=args.debug_cpu)
+    log_memory("After Dataset Load")
     
     # FAISS Indexer
     indexer = FaissIndexer(model.hidden_size, device=device, debug_cpu=args.debug_cpu)
@@ -430,6 +448,7 @@ def main():
             indexer.build(dictionary_embs)
             del dictionary_embs, all_embs
             if not args.debug_cpu: torch.cuda.empty_cache()
+            log_memory("After FAISS Build")
 
         # ----------------------------------
         # 2. Search Candidates (Queries)
@@ -464,6 +483,7 @@ def main():
         candidates = indexer.search(query_embs, k=args.topk)
         dataset.set_candidates(candidates)
         del query_embs, all_query_embs
+        log_memory("After FAISS Search")
         
         # ----------------------------------
         # 3. Train Epoch
@@ -526,6 +546,7 @@ def main():
             
             if step % 10 == 0:
                 logger.info(f"Epoch {epoch} | Step {step} | Loss: {loss.item():.4f}")
+                log_memory(f"Training Step {step}")
                 
             if args.dry_run and step >= 5:
                 logger.info("Dry run limit reached. Stopping epoch.")
