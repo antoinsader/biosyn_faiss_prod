@@ -172,6 +172,7 @@ class TrainingConfig:
     freeze_lower_layer_epoch_max:int=2
     enable_gradient_checkpoint:bool=False
     gradient_accumulation_steps: int = 1
+    update_faiss_every_n_epochs: int = 2
 
 
 
@@ -297,7 +298,8 @@ def tokenizer_parse_args():
 
     if args.dictionary_annotation_add_synonyms:
         cfg.tokenize.dictionary_annotation_add_synonyms = True
-
+    else:
+        print(f"You are not adding synonyms to the dictionary annotations, recent results shown that adding synonyms is better, if you want to add, consider doing --dictionary_annotation_add_synonyms")
 
     return cfg
 

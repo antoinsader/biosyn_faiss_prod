@@ -120,10 +120,13 @@ class Trainer:
         # ====================================
         #       BUILD FAISS
         # ====================================
-        build_faiss_start_time = time.time()
-        self.faiss.build_faiss(self.cfg.faiss.build_batch_size)
-        self.logger.log_event("FAISS BUILD", message="FAISS built from dictionary embs",
-                 epoch=epoch, t0=build_faiss_start_time)
+        if epoch == 1 or(epoch - 1) % self.cfg.train.update_faiss_every_n_epochs == 0:
+            build_faiss_start_time = time.time()
+            self.faiss.build_faiss(self.cfg.faiss.build_batch_size)
+            self.logger.log_event("FAISS BUILD", message="FAISS built from dictionary embs",
+                     epoch=epoch, t0=build_faiss_start_time)
+        else:
+             self.logger.log_event("FAISS BUILD", message="FAISS build skipped this epoch", epoch=epoch, log_memory=False)
 
 
 
