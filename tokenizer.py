@@ -263,6 +263,7 @@ if __name__=="__main__":
                                      special_token_start=mention_start_special_token, 
                                      special_token_end=mention_end_special_token,
                                     dictionary_max_chars_length=dictionary_max_chars_length,
+                                    add_synonyms=cfg.tokenize.dictionary_annotation_add_synonyms
                                      )
 
         shape = tokenize_names(dictionary_names_annotated, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
