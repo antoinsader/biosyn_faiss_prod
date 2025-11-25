@@ -173,6 +173,7 @@ class TrainingConfig:
     enable_gradient_checkpoint:bool=False
     gradient_accumulation_steps: int = 1
     update_faiss_every_n_epochs: int = 2
+    metric_compute_interval: int = 500
 
 
 

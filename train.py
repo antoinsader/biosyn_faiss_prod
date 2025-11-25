@@ -39,6 +39,8 @@ class Trainer:
         self.tokens_paths = TokensPaths(cfg, dictionary_key=dictionary_key, queries_key='train_queries')
         self.encoder = MyEncoder(cfg)
         self.model = Reranker(self.encoder, self.cfg)
+        if hasattr(torch, "compile"):
+            self.model = torch.compile(self.model)
         self.dataset = MyDataset(self.tokens_paths, cfg)
         self.faiss = MyFaiss(cfg, save_index_path=self.faiss_path,  dataset=self.dataset, tokens_paths=self.tokens_paths, encoder=self.encoder)
         self.chkpoint_path = cfg.paths.checkpoint_path
@@ -88,9 +90,14 @@ class Trainer:
             self.scheduler.step()
             self.model.optimizer.zero_grad(set_to_none=True)
 
-        accuracy_5, mrr, batch_margin = compute_metrics(batch_scores, batch_y, k=5)
-        # Return unscaled loss for logging
-        return loss.detach() * self.cfg.train.gradient_accumulation_steps, accuracy_5, mrr, batch_margin
+
+        # Compute metrics only at intervals
+        if (batch_idx + 1) % self.cfg.train.metric_compute_interval == 0:
+            accuracy_5, mrr, batch_margin = compute_metrics(batch_scores, batch_y, k=5)
+            return loss.detach() * self.cfg.train.gradient_accumulation_steps, accuracy_5, mrr, batch_margin
+        
+        # Return None for metrics if not computed
+        return loss.detach() * self.cfg.train.gradient_accumulation_steps, None, None, None
 
 
 
@@ -160,27 +167,37 @@ class Trainer:
         n_batches = 0
 
         self.model.optimizer.zero_grad(set_to_none=True) # Ensure grads are zero at start of epoch
+        
+        n_metric_batches = 0
+        epoch_loss_tensor = 0.0
         for i, data_loader_item in tqdm(enumerate(my_loader), total=len(my_loader), desc=f"epoch@{epoch} - Training batches"):
             loss, accuracy_5, mrr, batch_margin = self.train_one_batch(data_loader_item, i)
             
             if torch.is_tensor(loss):
-                epoch_loss += loss.item()
+                epoch_loss_tensor += loss.detach()
             else:
-                epoch_loss += loss
-
-            epoch_accuracy_5 += accuracy_5
-            epoch_mrr += mrr
-            epoch_margin += batch_margin
+                epoch_loss_tensor += loss
+            
+            if accuracy_5 is not None:
+                epoch_accuracy_5 += accuracy_5
+                epoch_mrr += mrr
+                epoch_margin += batch_margin
+                n_metric_batches += 1
+            
             n_batches += 1
 
             # if i % 100 == 0:
             #     self.logger.log_event(f"Training stats - batch {i}", message=f"Loss: {loss.item():.4f}", log_memory=True, epoch=epoch)
 
+        if torch.is_tensor(epoch_loss_tensor):
+            epoch_loss = epoch_loss_tensor.item()
+        else:
+            epoch_loss = epoch_loss_tensor
 
         avg_loss = (epoch_loss / max(1, n_batches))
-        avg_mrr = (epoch_mrr / max(1, n_batches))
-        avg_accuracy_5 = (epoch_accuracy_5 / max(1, n_batches))
-        avg_margin = (epoch_margin / max(1, n_batches))  # Average
+        avg_mrr = (epoch_mrr / max(1, n_metric_batches))
+        avg_accuracy_5 = (epoch_accuracy_5 / max(1, n_metric_batches))
+        avg_margin = (epoch_margin / max(1, n_metric_batches))  # Average
 
         self.logger.log_event(
             "Epoch summary",

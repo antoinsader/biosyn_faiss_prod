@@ -127,10 +127,13 @@ class MyDataset(Dataset):
                     shape=self.tokens_paths.dictionary_shape
                 )
 
-
         self.dictionary_cui_to_idx = defaultdict(list)
         for idx, cui in enumerate(self.dictionary_cuis):
             self.dictionary_cui_to_idx[cui].append(idx)
+
+        if len(self.dictionary_cuis) < 1_000_000:
+             cfg.train.metric_compute_interval = 1
+             print(f"Dictionary size is small ({len(self.dictionary_cuis)}), setting metric_compute_interval to 1")
 
     def __len__(self,):
         return len(self.queries_input_ids)
