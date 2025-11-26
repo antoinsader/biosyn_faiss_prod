@@ -9,6 +9,8 @@ set -e
 
 # git clone https://github.com/antoinsader/biosyn_faiss_prod
 # git clone --branch annotate --single-branch  https://github.com/antoinsader/biosyn_faiss_prod
+# git clone --branch optimization_test --single-branch  https://github.com/antoinsader/biosyn_faiss_prod
+
 
 
 
