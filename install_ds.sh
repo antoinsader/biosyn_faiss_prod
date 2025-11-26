@@ -8,8 +8,8 @@
 set -e
 
 # git clone https://github.com/antoinsader/biosyn_faiss_prod
-# git clone --branch annotate --single-branch  https://github.com/antoinsader/biosyn_faiss_prod
-# git clone --branch optimization_test --single-branch  https://github.com/antoinsader/biosyn_faiss_prod
+# git clone --branch annotate   https://github.com/antoinsader/biosyn_faiss_prod
+# git clone --branch optimization_test   https://github.com/antoinsader/biosyn_faiss_prod
 
 
 
@@ -21,7 +21,7 @@ mkdir -p "$TARGET_DIR"
 unzip -o ./raw/train_dictionary_lg.zip -d  "$TARGET_DIR"
 unzip -o ./raw/traindev_lg.zip -d "$TARGET_DIR"
 unzip -o ./raw/test_lg.zip -d "$TARGET_DIR"
-
+mv data/raw/test_unseen/ data/raw/test/ 
 
 
 
