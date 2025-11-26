@@ -114,16 +114,21 @@
     "eval_started": true
   },
   {
-    "id": 9,
-    "start_time": "2025-11-24_23-26-01",
+    "id": 11,
+    "start_time": "2025-11-25_18-55-16",
     "train_started": true,
-    "finished": false,
-    "training_log_name": "small dictionary embeding cls and between topk=50",
-    "log_details_file": "./logs/log_9_2025-11-24_23-26-01.log"
-    "start_time": "2025-11-25_00-51-31",
-    "train_started": true,
-    "finished": false,
-    "training_log_name": "test_grad_accum",
-    "log_details_file": "./logs/log_5_2025-11-25_00-51-31.log"
+    "finished": true,
+    "training_log_name": "big dictionary",
+    "log_details_file": "./logs/log_encoder_11.log",
+    "end_date": "2025-11-26_01-08-34",
+    "queries_size": 159591,
+    "dictionary_size": 4239386,
+    "trained_period": "5h, 51mins, 24secs",
+    "epochs": 7,
+    "last_faiss_recall@15": 0.7705384388843982,
+    "last_avg_acc_5": 0.7368421052631579,
+    "last_avg_mrr": 0.7272436901142723,
+    "last_avg_loss": 0.1660399656367481,
+    "result_encoder_dir": "./output/encoder_11/"
   }
 ]

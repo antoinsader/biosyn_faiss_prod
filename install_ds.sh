@@ -18,9 +18,8 @@ mkdir -p "$TARGET_DIR"
 
 unzip -o ./raw/train_dictionary_lg.zip -d  "$TARGET_DIR"
 unzip -o ./raw/traindev_lg.zip -d "$TARGET_DIR"
-# unzip -o ./raw/test.zip -d "$TARGET_DIR"
-
-
+unzip -o ./raw/test_unseen.zip -d "$TARGET_DIR"
+mv data/raw/test_unseen/ data/raw/test/
 
 
 
