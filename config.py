@@ -174,6 +174,7 @@ class TrainingConfig:
     gradient_accumulation_steps: int = 1
     update_faiss_every_n_epochs: int = 1
     metric_compute_interval: int = 500
+    use_cached_candidates: bool = False
 
 
 
@@ -406,6 +407,7 @@ def train_parse_args():
     parser.add_argument('--force_ivfpq',  action="store_true")
     parser.add_argument('--no_load_data_to_ram',  action="store_true")
     parser.add_argument('--enable_gradient_checkpoint',  action="store_true")
+    parser.add_argument('--use_cached_candidates',  action="store_true")
 
 
 
@@ -460,6 +462,8 @@ def train_parse_args():
         assert os.path.exists(cuis) and os.path.exists(inp_ids), f"Mini dictionary was not created, make sure to execute minimize.py"
         cfg.train.use_small_dictionary = True
 
+    if args.use_cached_candidates:
+        cfg.train.use_cached_candidates = True
 
     if args.use_amp:
         cfg.train.use_amp = args.use_amp

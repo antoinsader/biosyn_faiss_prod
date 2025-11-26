@@ -64,24 +64,20 @@ class MyDataset(Dataset):
             3- Giving batches for the training
     """
     def __init__(self,tokens_paths: TokensPaths, cfg: GlobalConfig):
-        self.tokens_paths  = tokens_paths
-
+        self.tokens_paths = tokens_paths 
         self.topk = cfg.train.topk
         self.all_candidates_idxs = None
-
-
+        self.inject_hard_positives_candidates = cfg.train.inject_hard_positives_candidates
+        self.hard_positives_num = cfg.train.hard_positives_num
+        self.inject_negative_candidates = cfg.train.inject_negative_candidates
+        self.negative_candidates_num = cfg.train.negative_candidates_num
+        
         self.dictionary_cuis  = np.load(self.tokens_paths.dictionary_cuis_path)
         self.queries_cuis  = np.load(self.tokens_paths.queries_cuis_path)
 
-
         self.previous_epoch_candidates = None
+        self.dict_embeddings = None
 
-
-        self.inject_hard_negatives_candidates = cfg.train.inject_hard_negatives_candidates
-        self.hard_negatives_num = cfg.train.hard_negatives_num
-
-        self.inject_hard_positives_candidates = cfg.train.inject_hard_positives_candidates
-        self.hard_positives_num = cfg.train.hard_positives_num
 
 
         self.queries_input_ids = np.memmap(
@@ -138,6 +134,12 @@ class MyDataset(Dataset):
     def __len__(self,):
         return len(self.queries_input_ids)
 
+    def set_dict_embeddings(self, embeddings):
+        """
+        embeddings: numpy array (N, H)
+        """
+        self.dict_embeddings = embeddings
+
     def __getitem__(self, query_idx):
         """
             This function is for the batching, takes as an argument the query_idx:
@@ -167,6 +169,16 @@ class MyDataset(Dataset):
             "input_ids": self.dictionary_input_ids[candidate_idxs],
             "attention_mask": self.dictionary_attention_masks[candidate_idxs],
         }
+
+        item = {
+             "query_tokens": query_tokens,
+             "candidate_tokens": candidate_tokens
+        }
+
+        if self.dict_embeddings is not None:
+            # Use cached embeddings
+            c_embs = self.dict_embeddings[candidate_idxs]
+            candidate_tokens["cand_embeddings"] = torch.tensor(c_embs, dtype=torch.float)
 
         query_candidates_cuis = np.array(self.dictionary_cuis)[candidate_idxs] #(batch_size, topk)
         #       for marginal_nll error_type will return  (batch_size, topk) for each item 0 if false, 1 for true

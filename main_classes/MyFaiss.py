@@ -149,7 +149,7 @@ class MyFaiss():
         gc.collect()
 
 
-    def build_faiss(self, batch_size):
+    def build_faiss(self, batch_size, return_embeddings=False):
         """
             Build with batches the faiss dictionary, 
             dictionary_input_ids + dictionary_attention_masks ==> embed ==> index.add(emb)
@@ -168,16 +168,26 @@ class MyFaiss():
         dictionary_inputs = self.dataset.dictionary_input_ids
         dictionary_att = self.dataset.dictionary_attention_masks
 
+        all_embs = []
+
         for start in tqdm(range(0, N, batch_size), desc="Building faiss index"):
             end = min(start + batch_size, N)
             inp  = torch.as_tensor(dictionary_inputs[start:end], device=self.device)
             att = torch.as_tensor(dictionary_att[start:end],device=self.device)
             embs = self.encoder.get_emb(inp, att, use_amp=self.use_amp, use_no_grad=True)
+            
+            if return_embeddings:
+                all_embs.append(embs.cpu().numpy())
+
             self.faiss_index.add(embs.contiguous())
             del inp, att, embs
         del dictionary_inputs, dictionary_att
         torch.cuda.empty_cache()
         gc.collect()
+
+        if return_embeddings:
+            return np.concatenate(all_embs, axis=0)
+        return None
 
     def search_faiss(self, batch_size):
         """

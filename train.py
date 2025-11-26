@@ -73,7 +73,12 @@ class Trainer:
         with torch.amp.autocast(device_type="cuda", enabled=(self.use_cuda and self.cfg.train.use_amp)):
             batch_x, batch_y = data_loader_item
             batch_query_tokens, batch_candidates_tokens = batch_x
-            batch_scores = self.model(batch_query_tokens, batch_candidates_tokens)
+            
+            cand_embeddings = None
+            if "cand_embeddings" in batch_candidates_tokens:
+                 cand_embeddings = batch_candidates_tokens["cand_embeddings"].to(self.device, non_blocking=True)
+            
+            batch_scores = self.model(batch_query_tokens, batch_candidates_tokens, cand_embeddings=cand_embeddings)
             loss = self.model.get_loss(batch_scores, batch_y)
 
         # Scale loss
@@ -116,41 +121,36 @@ class Trainer:
         """
         torch.cuda.empty_cache()
         gc.collect()
-
+        
 
         self.encoder.unfreeze_all()
         if epoch <= self.cfg.train.freeze_lower_layer_epoch_max:
             self.encoder.freeze_lower_layers(max(0, 7 - epoch ))
 
+        
+        
 
-
-        # ====================================
-        #       BUILD FAISS
-        # ====================================
-        if epoch == 1 or epoch == self.cfg.train.num_epochs  or  (epoch - 1) % self.cfg.train.update_faiss_every_n_epochs == 0:
-            build_faiss_start_time = time.time()
-            self.faiss.build_faiss(self.cfg.faiss.build_batch_size)
-            self.logger.log_event("FAISS BUILD", message="FAISS built from dictionary embs",
-                     epoch=epoch, t0=build_faiss_start_time)
+        # Build FAISS and optionally get embeddings
+        embeddings = self.faiss.build_faiss(
+            self.cfg.faiss.build_batch_size, 
+            return_embeddings=self.cfg.train.use_cached_candidates
+        )
+        
+        if self.cfg.train.use_cached_candidates:
+            self.logger.log_event("Caching Candidates", message="Setting dictionary embeddings in dataset", epoch=epoch, log_memory=True)
+            self.dataset.set_dict_embeddings(embeddings)
         else:
-             self.logger.log_event("FAISS BUILD", message="FAISS build skipped this epoch", epoch=epoch, log_memory=False)
+            if embeddings is not None: del embeddings
+            self.dataset.set_dict_embeddings(None)
 
-
-
-        # ====================================
-        #       SEARCH FAISS
-        # ====================================
-        search_faiss_start_time = time.time()
-        candidates_idxs = self.faiss.search_faiss(self.cfg.faiss.search_batch_size) # (queries_N, topk)
-        candidates_idxs = candidates_idxs.astype(np.int64)
-        self.logger.log_event("FAISS SEARCH", message=f"FAISS searched the candidates and resulted candidates_idxs with shape={candidates_idxs.shape}", t0=search_faiss_start_time)
-
-
-
-        self.dataset.set_candidates(candidates_idxs)
-        recall_faiss, recall_faiss_k2 = self.faiss.compute_faiss_recall_at_k(candidates_idxs, k=self.topk, k2=5)
-        self.logger.log_event(f"Faiss recall", message= f"faiss recall@{self.topk}: {recall_faiss:.4f}. faiss recall@5: {recall_faiss_k2:.4f}", epoch=epoch, log_memory=False)
-
+        faiss_search_start_time = time.time()
+        candidates = self.faiss.search_faiss(self.cfg.faiss.search_batch_size)
+        self.logger.log_event("Faiss search finished", message=f"Candidates shape: {candidates.shape}", t0=faiss_search_start_time, log_memory=True, epoch=epoch)
+        
+        self.dataset.set_candidates(candidates)
+        
+        recall_faiss, recall_faiss_k2 = self.faiss.compute_faiss_recall_at_k(candidates, k=self.topk, k2=5)
+        self.logger.log_event("Faiss recall", message=f"Recall@{self.topk}: {recall_faiss:.4f}, Recall@5: {recall_faiss_k2:.4f}", epoch=epoch)
 
 
         my_loader = torch.utils.data.DataLoader(

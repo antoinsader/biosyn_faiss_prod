@@ -14,11 +14,13 @@ if __name__ == '__main__':
     tokens_paths  = TokensPaths(cfg, dictionary_key='dictionary', queries_key='train_queries')
     dataset = MyDataset(tokens_paths, cfg)
     dict_cuis = np.array(dataset.dictionary_cuis)
+    assert len(dict_cuis) > 1_000_000, f"Dictionary size {len(dict_cuis):,} is less than 1M, no need for minimizing"
+
     N_dict = len(dict_cuis)
     queries_cuis = np.array(dataset.queries_cuis)
     unique_query_cuis = np.unique(queries_cuis)
     target_size = cfg.minimize_target
-    assert target_size > len(queries_cuis)
+    assert target_size > len(queries_cuis), f"Target size {target_size} is smaller than number of unique query CUIs {len(unique_query_cuis)}"
 
 
     print(f"Dictionary size before: {N_dict:,}")
@@ -43,20 +45,6 @@ if __name__ == '__main__':
 
     # ----------------------------
     # Step 2: fill up with random extras until we reach target_size
-    # ----------------------------
-    if len(must_keep_idxs) >= target_size:
-        selected_idxs = np.random.choice(must_keep_idxs, size=target_size, replace=False)
-    else:
-        remaining = list(set(range(N_dict)) - set(must_keep_idxs))
-        needed = target_size - len(must_keep_idxs)
-        random_fill = np.random.choice(remaining, size=needed, replace=False)
-        selected_idxs = np.concatenate([must_keep_idxs, random_fill])
-
-    print(f"Final dictionary size: {len(selected_idxs):,}")
-
-    # ----------------------------
-    # Step 3: subset dictionary arrays
-    # ----------------------------
     dictionary_inputs_small = dataset.dictionary_input_ids[selected_idxs]
     dictionary_att_small = dataset.dictionary_attention_masks[selected_idxs]
     dict_cuis_small = dict_cuis[selected_idxs]
