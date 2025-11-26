@@ -70,7 +70,7 @@ class MyDataset(Dataset):
         self.inject_hard_positives_candidates = cfg.train.inject_hard_positives_candidates
         self.hard_positives_num = cfg.train.hard_positives_num
         self.inject_negative_candidates = cfg.train.inject_hard_negatives_candidates
-        self.negative_candidates_num = cfg.train.negative_candidates_num
+        self.hard_negatives_num = cfg.train.hard_negatives_num
         
         self.dictionary_cuis  = np.load(self.tokens_paths.dictionary_cuis_path)
         self.queries_cuis  = np.load(self.tokens_paths.queries_cuis_path)
