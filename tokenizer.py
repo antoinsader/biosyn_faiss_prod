@@ -240,13 +240,13 @@ if __name__=="__main__":
             special_token_end=mention_end_special_token,
             tokenizer=tokenizer)
 
-        queries_cuis = [q[1] for q in train_queries]
+        queries_cuis = [q[1].replace("MESH:", "") for q in train_queries]
         if cfg.tokenize.queries_annotate:
             # taking annotated sentences as the query names to tokenize 
             queries_names = [q[2] for q in train_queries]
         else:
             # taking only query mentions as the query names to tokenize 
-            queries_names = [q[0].replace("MESH:", "") for q in train_queries]
+            queries_names = [q[0] for q in train_queries]
 
 
 
@@ -273,19 +273,21 @@ if __name__=="__main__":
                                     add_synonyms=bool(cfg.tokenize.dictionaries_annotate and cfg.tokenize.dictionary_annotation_add_synonyms)
                                      )
         if cfg.tokenize.dictionaries_annotate:
+
             shape = tokenize_names(dictionary_names_annotated, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
                        batch_size=tokenize_batch_size, tokenizer=tokenizer)
-            dictionary_cuis = np.array(dictionary_cuis)
-        else:
-            dictionary_names_normal = [d.replace("MESH:", "") for d in dictionary_names_normal]
-            shape = tokenize_names(dictionary_names_normal, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
-                       batch_size=tokenize_batch_size, tokenizer=tokenizer)
-
             keep_mask = filter_tokenized_dictionary(tokens_paths.dictionary_input_ids_path, 
                                     tokens_paths.dictionary_attention_mask_path, 
                                     mention_end_token_id,
                                     shape)
             dictionary_cuis = np.array(dictionary_cuis)[keep_mask]
+
+        else:
+            dictionary_cuis = [d.replace("MESH:", "") for d in dictionary_cuis]
+            shape = tokenize_names(dictionary_names_normal, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
+                       batch_size=tokenize_batch_size, tokenizer=tokenizer)
+            dictionary_cuis = np.array(dictionary_cuis)
+
         np.save(tokens_paths.dictionary_cuis_path, dictionary_cuis)
         meta = {"shape": (len(dictionary_cuis), shape[1])}
         with open(tokens_paths.dictionary_meta  , "w") as f:
@@ -308,13 +310,13 @@ if __name__=="__main__":
 
 
 
-        test_queries_cuis = [q[1] for q in test_queries]
+        test_queries_cuis = [q[1].replace("MESH:", "") for q in test_queries]
         if cfg.tokenize.queries_annotate:
             # taking annotated sentences as the query names to tokenize 
             test_queries_names = [q[2] for q in test_queries]
         else:
             # taking only query mentions as the query names to tokenize 
-            test_queries_names = [q[0].replace("MESH:", "") for q in test_queries]
+            test_queries_names = [q[0] for q in test_queries]
 
 
         np.save(test_tokens_paths.queries_cuis_path, test_queries_cuis)
