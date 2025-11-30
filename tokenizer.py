@@ -275,16 +275,17 @@ if __name__=="__main__":
         if cfg.tokenize.dictionaries_annotate:
             shape = tokenize_names(dictionary_names_annotated, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
                        batch_size=tokenize_batch_size, tokenizer=tokenizer)
+            dictionary_cuis = np.array(dictionary_cuis)
         else:
             dictionary_names_normal = [d.replace("MESH:", "") for d in dictionary_names_normal]
             shape = tokenize_names(dictionary_names_normal, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
                        batch_size=tokenize_batch_size, tokenizer=tokenizer)
 
-        keep_mask = filter_tokenized_dictionary(tokens_paths.dictionary_input_ids_path, 
+            keep_mask = filter_tokenized_dictionary(tokens_paths.dictionary_input_ids_path, 
                                     tokens_paths.dictionary_attention_mask_path, 
                                     mention_end_token_id,
                                     shape)
-        dictionary_cuis = np.array(dictionary_cuis)[keep_mask]
+            dictionary_cuis = np.array(dictionary_cuis)[keep_mask]
         np.save(tokens_paths.dictionary_cuis_path, dictionary_cuis)
         meta = {"shape": (len(dictionary_cuis), shape[1])}
         with open(tokens_paths.dictionary_meta  , "w") as f:
