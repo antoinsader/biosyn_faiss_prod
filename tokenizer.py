@@ -246,7 +246,7 @@ if __name__=="__main__":
             queries_names = [q[2] for q in train_queries]
         else:
             # taking only query mentions as the query names to tokenize 
-            queries_names = [q[0] for q in train_queries]
+            queries_names = [q[0].replace("MESH:", "") for q in train_queries]
 
 
 
@@ -276,6 +276,7 @@ if __name__=="__main__":
             shape = tokenize_names(dictionary_names_annotated, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
                        batch_size=tokenize_batch_size, tokenizer=tokenizer)
         else:
+            dictionary_names_normal = [d.replace("MESH:", "") for d in dictionary_names_normal]
             shape = tokenize_names(dictionary_names_normal, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
                        batch_size=tokenize_batch_size, tokenizer=tokenizer)
 
@@ -312,7 +313,7 @@ if __name__=="__main__":
             test_queries_names = [q[2] for q in test_queries]
         else:
             # taking only query mentions as the query names to tokenize 
-            test_queries_names = [q[0] for q in test_queries]
+            test_queries_names = [q[0].replace("MESH:", "") for q in test_queries]
 
 
         np.save(test_tokens_paths.queries_cuis_path, test_queries_cuis)
