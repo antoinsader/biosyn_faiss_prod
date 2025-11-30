@@ -240,12 +240,19 @@ if __name__=="__main__":
             special_token_end=mention_end_special_token,
             tokenizer=tokenizer)
 
-        # queries_names = [q[0] for q in train_queries]
         queries_cuis = [q[1] for q in train_queries]
-        queries_sentences = [q[2] for q in train_queries]
+        if cfg.tokenize.queries_annotate:
+            # taking annotated sentences as the query names to tokenize 
+            queries_names = [q[2] for q in train_queries]
+        else:
+            # taking only query mentions as the query names to tokenize 
+            queries_names = [q[0] for q in train_queries]
+
+
+
         np.save(tokens_paths.queries_cuis_path, queries_cuis)
 
-        tokenize_names(queries_sentences, 
+        tokenize_names(queries_names, 
                        tokens_paths.queries_input_ids_path, 
                        tokens_paths.queries_attention_mask_path, 
                        max_length=queries_max_length,
@@ -259,16 +266,18 @@ if __name__=="__main__":
 
     if not cfg.tokenize.skip_tokenize_dictionary:
         print(f"Reading dictionary...")
-        _, dictionary_cuis, dictionary_names_annotated = load_dictionary(cfg.paths.dictionary_raw_path, 
+        dictionary_names_normal, dictionary_cuis, dictionary_names_annotated = load_dictionary(cfg.paths.dictionary_raw_path, 
                                      special_token_start=mention_start_special_token, 
                                      special_token_end=mention_end_special_token,
                                     dictionary_max_chars_length=dictionary_max_chars_length,
-                                    add_synonyms=cfg.tokenize.dictionary_annotation_add_synonyms
+                                    add_synonyms=bool(cfg.tokenize.dictionaries_annotate and cfg.tokenize.dictionary_annotation_add_synonyms)
                                      )
-
-        shape = tokenize_names(dictionary_names_annotated, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
+        if cfg.tokenize.dictionaries_annotate:
+            shape = tokenize_names(dictionary_names_annotated, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
                        batch_size=tokenize_batch_size, tokenizer=tokenizer)
-
+        else:
+            shape = tokenize_names(dictionary_names_normal, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
+                       batch_size=tokenize_batch_size, tokenizer=tokenizer)
 
         keep_mask = filter_tokenized_dictionary(tokens_paths.dictionary_input_ids_path, 
                                     tokens_paths.dictionary_attention_mask_path, 
@@ -294,12 +303,21 @@ if __name__=="__main__":
             special_token_end=mention_end_special_token,
             tokenizer=tokenizer)
 
-        # test_queries_names = [q[0] for q in test_queries]
+
+
+
         test_queries_cuis = [q[1] for q in test_queries]
-        test_queries_sentences = [q[2] for q in test_queries]
+        if cfg.tokenize.queries_annotate:
+            # taking annotated sentences as the query names to tokenize 
+            test_queries_names = [q[2] for q in test_queries]
+        else:
+            # taking only query mentions as the query names to tokenize 
+            test_queries_names = [q[0] for q in test_queries]
+
+
         np.save(test_tokens_paths.queries_cuis_path, test_queries_cuis)
 
-        tokenize_names(test_queries_sentences, 
+        tokenize_names(test_queries_names, 
                        test_tokens_paths.queries_input_ids_path, 
                        test_tokens_paths.queries_attention_mask_path, 
                        max_length=queries_max_length,

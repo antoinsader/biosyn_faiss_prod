@@ -69,7 +69,7 @@ class Trainer:
                 - We calculate accuracy and mrr metrics for the batch
         """
         # self.model.optimizer.zero_grad(set_to_none=True) # Moved to step logic
-        
+
         with torch.amp.autocast(device_type="cuda", enabled=(self.use_cuda and self.cfg.train.use_amp)):
             batch_x, batch_y = data_loader_item
             batch_query_tokens, batch_candidates_tokens = batch_x
@@ -123,7 +123,7 @@ class Trainer:
             self.encoder.freeze_lower_layers(max(0, 7 - epoch ))
 
 
-
+        
         # ====================================
         #       BUILD FAISS
         # ====================================
@@ -134,8 +134,6 @@ class Trainer:
                      epoch=epoch, t0=build_faiss_start_time)
         else:
              self.logger.log_event("FAISS BUILD", message="FAISS build skipped this epoch", epoch=epoch, log_memory=False)
-
-
 
         # ====================================
         #       SEARCH FAISS

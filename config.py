@@ -91,8 +91,10 @@ class TokensConfig:
     split_train_queries :bool=False
     test_split_percentage: float = 0.2
 
-    
 
+    queries_annotate:bool = True
+    dictionaries_annotate: bool = True
+    
     dictionary_annotation_add_synonyms: bool = False
 
     query_tokens_window_words_in_text = 10 #5 words before mention start, 5 words after mention start
@@ -172,13 +174,15 @@ class TrainingConfig:
     freeze_lower_layer_epoch_max:int=2
     enable_gradient_checkpoint:bool=False
     gradient_accumulation_steps: int = 1
-    update_faiss_every_n_epochs: int = 2
+    update_faiss_every_n_epochs: int = 1
     metric_compute_interval: int = 500
 
 
 
 @dataclass
 class FaissConfig:
+    use_faiss : bool = True
+
     build_batch_size: int = 6096
     search_batch_size: int = 6096
 
@@ -257,9 +261,11 @@ def tokenizer_parse_args():
     parser.add_argument('--skip_tokenizing_dictionary',  action="store_true")
     parser.add_argument('--skip_tokenizing_queries',  action="store_true")
     parser.add_argument('--skip_tokenizing_test_queries',  action="store_true")
-    
-    
+
+
     parser.add_argument('--dictionary_annotation_add_synonyms',  action="store_true")
+    parser.add_argument('--no_queries_annotate',  action="store_true")
+    parser.add_argument('--no_dictionaries_annotate',  action="store_true")
 
     args = parser.parse_args()
 
@@ -273,8 +279,7 @@ def tokenizer_parse_args():
         cfg.tokenize.skip_tokenize_queries = True
     if args.skip_tokenizing_test_queries:
         cfg.tokenize.skip_tokenize_test_queries = True
-    
-    
+
     if args.dictionary_path:
         assert os.path.exists(args.dictionary_path), f'Dict path: {args.dictionary_path} not exists'
         cfg.paths.dictionary_raw_path = args.dictionary_path
@@ -290,7 +295,7 @@ def tokenizer_parse_args():
 
     if args.split_train_queries:
         cfg.tokenize.split_train_queries = True
-    
+
     if args.test_split_percentage:
         cfg.tokenize.split_train_queries = True
         assert 0.0 <= args.test_split_percentage <= 1.0 
@@ -301,6 +306,17 @@ def tokenizer_parse_args():
         cfg.tokenize.dictionary_annotation_add_synonyms = True
     else:
         print(f"You are not adding synonyms to the dictionary annotations, recent results shown that adding synonyms is better, if you want to add, consider doing --dictionary_annotation_add_synonyms")
+
+    if args.no_queries_annotate:
+        cfg.tokenize.queries_annotate = False
+    else:
+        cfg.tokenize.queries_annotate = True
+
+    if args.no_dictionaries_annotate:
+        cfg.tokenize.dictionaries_annotate = False
+    else:
+        cfg.tokenize.dictionaries_annotate = True
+
 
     return cfg
 
@@ -402,11 +418,12 @@ def train_parse_args():
     parser.add_argument('--build_faiss_batch_size', help='Batch size when building faiss index ', type=int, required=False)
     parser.add_argument('--search_faiss_batch_size', help='Batch size when searching in faiss ', type=int, required=False)
 
-    parser.add_argument('--use_amp',  action="store_true")
+    parser.add_argument('--no_use_amp',  action="store_true")
     parser.add_argument('--force_ivfpq',  action="store_true")
     parser.add_argument('--no_load_data_to_ram',  action="store_true")
     parser.add_argument('--enable_gradient_checkpoint',  action="store_true")
 
+    # parser.add_argument('--no_faiss',  action="store_true")
 
 
 
@@ -461,8 +478,10 @@ def train_parse_args():
         cfg.train.use_small_dictionary = True
 
 
-    if args.use_amp:
-        cfg.train.use_amp = args.use_amp
+    if args.no_use_amp:
+        cfg.train.use_amp = False
+    else:
+        cfg.train.use_amp = True
 
     if args.force_ivfpq :
         cfg.faiss.force_ivfpq = True
@@ -474,6 +493,14 @@ def train_parse_args():
         cfg.train.enable_gradient_checkpoint = True
     else:
         print(f"If your dictionary entries are big (more than 1m), you should consider enabling gradient checkpointing, to not have OOM (it would be slower but more stable)")
+
+
+    # if args.no_faiss:
+    #     print(f"******IMPORTANT*****: YOU ARE NOT USING FAISS")
+    #     cfg.faiss.use_faiss = False
+    # else:
+    #     cfg.faiss.use_faiss = True
+
 
     return cfg
 

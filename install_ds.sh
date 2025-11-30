@@ -8,14 +8,12 @@
 set -e
 
 # git clone https://github.com/antoinsader/biosyn_faiss_prod
-# git clone --branch annotate --single-branch  https://github.com/antoinsader/biosyn_faiss_prod
+# git clone --branch annotate  https://github.com/antoinsader/biosyn_faiss_prod.git
 
 
 
 TARGET_DIR="data/raw"
-
 mkdir -p "$TARGET_DIR"
-
 unzip -o ./raw/train_dictionary_lg.zip -d  "$TARGET_DIR"
 unzip -o ./raw/traindev_lg.zip -d "$TARGET_DIR"
 unzip -o ./raw/test_unseen.zip -d "$TARGET_DIR"

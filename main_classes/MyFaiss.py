@@ -49,6 +49,8 @@ class MyFaiss():
 
         num_threads = min(32, os.cpu_count() or 8)
         faiss.omp_set_num_threads(num_threads)
+        
+        self.flat_index_used = True
 
         self.faiss_index = None
         self.dictionary_entries_n = None
@@ -102,8 +104,10 @@ class MyFaiss():
         if N >= 1_000_000 or self.cfg_faiss.force_ivfpq:
             self._create_ivfpq_index(N)
             self.train_samples(N)
+            self.flat_index_used = False
         else:
             self._create_flat_index()
+            self.flat_index_used = True
 
 
 
@@ -162,6 +166,8 @@ class MyFaiss():
             self.init_index(N)
         else:
             self.faiss_index.reset()
+            if not self.flat_index_used:
+                self.train_samples(N)
         assert self.faiss_index is not None
 
 
