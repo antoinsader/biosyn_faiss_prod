@@ -272,6 +272,8 @@ if __name__=="__main__":
                                     dictionary_max_chars_length=dictionary_max_chars_length,
                                     add_synonyms=bool(cfg.tokenize.dictionaries_annotate and cfg.tokenize.dictionary_annotation_add_synonyms)
                                      )
+        dictionary_cuis = [d.replace("MESH:", "") for d in dictionary_cuis]
+        
         if cfg.tokenize.dictionaries_annotate:
 
             shape = tokenize_names(dictionary_names_annotated, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
@@ -283,7 +285,6 @@ if __name__=="__main__":
             dictionary_cuis = np.array(dictionary_cuis)[keep_mask]
 
         else:
-            dictionary_cuis = [d.replace("MESH:", "") for d in dictionary_cuis]
             shape = tokenize_names(dictionary_names_normal, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
                        batch_size=tokenize_batch_size, tokenizer=tokenizer)
             dictionary_cuis = np.array(dictionary_cuis)

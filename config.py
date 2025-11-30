@@ -183,8 +183,8 @@ class TrainingConfig:
 class FaissConfig:
     use_faiss : bool = True
 
-    build_batch_size: int = 6096
-    search_batch_size: int = 6096
+    build_batch_size: int = 8000
+    search_batch_size: int = 8000
 
     save_index_path = None
 
