@@ -247,6 +247,7 @@ if __name__=="__main__":
         else:
             # taking only query mentions as the query names to tokenize 
             queries_names = [q[0] for q in train_queries]
+            queries_max_length = cfg.tokenize.queries_without_annotate_max_length
 
 
 
@@ -275,7 +276,6 @@ if __name__=="__main__":
         dictionary_cuis = [d.replace("MESH:", "") for d in dictionary_cuis]
         
         if cfg.tokenize.dictionaries_annotate:
-
             shape = tokenize_names(dictionary_names_annotated, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
                        batch_size=tokenize_batch_size, tokenizer=tokenizer)
             keep_mask = filter_tokenized_dictionary(tokens_paths.dictionary_input_ids_path, 
@@ -285,7 +285,10 @@ if __name__=="__main__":
             dictionary_cuis = np.array(dictionary_cuis)[keep_mask]
 
         else:
-            shape = tokenize_names(dictionary_names_normal, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
+            shape = tokenize_names(dictionary_names_normal, 
+                                   tokens_paths.dictionary_input_ids_path, 
+                                   tokens_paths.dictionary_attention_mask_path, 
+                                   max_length=cfg.tokenize.dictionary_without_annotate_max_length, 
                        batch_size=tokenize_batch_size, tokenizer=tokenizer)
             dictionary_cuis = np.array(dictionary_cuis)
 
@@ -318,6 +321,7 @@ if __name__=="__main__":
         else:
             # taking only query mentions as the query names to tokenize 
             test_queries_names = [q[0] for q in test_queries]
+            queries_max_length = cfg.tokenize.queries_without_annotate_max_length
 
 
         np.save(test_tokens_paths.queries_cuis_path, test_queries_cuis)
