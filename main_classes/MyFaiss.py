@@ -166,8 +166,8 @@ class MyFaiss():
             self.init_index(N)
         else:
             self.faiss_index.reset()
-            # if not self.flat_index_used:
-            #     self.train_samples(N)
+            if not self.flat_index_used:
+                self.train_samples(N)
                 
         assert self.faiss_index is not None
 
