@@ -130,5 +130,24 @@
     "last_avg_mrr": 0.7272436901142723,
     "last_avg_loss": 0.1660399656367481,
     "result_encoder_dir": "./output/encoder_11/"
+  },
+  {
+    "id": 12,
+    "start_time": "2025-12-01_13-41-20",
+    "train_started": true,
+    "finished": true,
+    "training_log_name": "exp_7 big dataset baseline",
+    "log_details_file": "./logs/log_12_2025-12-01_13-41-20.log",
+    "end_date": "2025-12-01_17-27-24",
+    "queries_size": 159591,
+    "dictionary_size": 4242020,
+    "trained_period": "3h, 45mins, 52secs",
+    "epochs": 8,
+    "last_faiss_recall@15": 0.7716788540707182,
+    "last_avg_acc_5": 0.7927631578947368,
+    "last_avg_mrr": 0.723062874455201,
+    "last_avg_loss": 0.24948411066729323,
+    "result_encoder_dir": "./output/encoder_12/",
+    "eval_started": true
   }
 ]
