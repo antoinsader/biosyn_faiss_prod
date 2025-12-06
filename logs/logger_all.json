@@ -149,5 +149,26 @@
     "last_avg_loss": 0.24948411066729323,
     "result_encoder_dir": "./output/encoder_12/",
     "eval_started": true
+  },
+  {
+    "id": 13,
+    "start_time": "2025-12-01_14-08-53",
+    "train_started": true,
+    "finished": true,
+    "training_log_name": "exp_6",
+    "log_details_file": "./logs/log_19_2025-12-01_14-08-53.log",
+    "end_date": "2025-12-01_22-04-59",
+    "queries_size": 159591,
+    "dictionary_size": 4239386,
+    "trained_period": "2h, 7mins, 23secs",
+    "epochs": 8,
+    "last_faiss_recall@15": 0.8116247156794556,
+    "last_avg_acc_5": 0.7598684210526315,
+    "last_avg_mrr": 0.7582236842105263,
+    "last_avg_loss": 0.0675526095512218,
+    "result_encoder_dir": "./output/encoder_19/",
+    "eval_started": true
   }
+
+
 ]
