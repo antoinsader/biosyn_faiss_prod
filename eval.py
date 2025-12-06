@@ -52,9 +52,6 @@ class Evaluator:
         candidates_idxs = self.faiss.search_faiss(self.cfg.faiss.search_batch_size) # (queries_N, topk)
         candidates_idxs = candidates_idxs.astype(np.int64)
         self.dataset.set_candidates(candidates_idxs)
-        recall_faiss, recall_faiss_5 = self.faiss.compute_faiss_recall_at_k(candidates_idxs, k=self.topk, k2=5)
-        self.logger.log_event(f"Faiss recall@{self.topk}", message= f"{recall_faiss:.4f}",  log_memory=False)
-        self.logger.log_event(f"Faiss recall@5", message= f"{recall_faiss_5:.4f}",  log_memory=False)
 
         my_loader = torch.utils.data.DataLoader(
             self.dataset,
