@@ -83,7 +83,7 @@ class Evaluator:
                 batch_pred = self.model(query_tokens, candidate_tokens)  # [batch_size, hidden_size]
                 loss = self.model.get_loss(batch_pred, batch_y)
 
-                res = self._compute_metrics_eval(batch_pred.detach(), batch_y, multiple_ks=[1, 2,4, 5, 7, 10, 12, 15, 17, 20])
+                res = self._compute_metrics_eval(batch_pred.detach(), batch_y, multiple_ks=[1, 2,4, 5])
                 res["loss"] = loss.item()
                 all_metrics.append(res)
                 total_samples += batch_size
@@ -91,7 +91,7 @@ class Evaluator:
         avg_metrics = {k: np.mean([m[k] for m in all_metrics]) for k in all_metrics[0].keys()}
         self.logger.log_event(
             event_tag="Evaluation results",
-            message=f"Average Loss: {avg_metrics['loss']:.4f} \n  Mean Reciprocal Rank (MRR): {avg_metrics['mrr']:.4f} \n ",
+            message=f"Average Loss: {avg_metrics['loss']:.8f} \n  Mean Reciprocal Rank (MRR): {avg_metrics['mrr']:.8f} \n ",
             log_memory=False
         )
 
@@ -99,7 +99,7 @@ class Evaluator:
         acc_results = []
         for k in sorted([kk for kk in avg_metrics.keys() if kk.startswith('acc@')],
                         key=lambda x: int(x.split('@')[1])):
-            acc_results.append(f"{k:>10}: {avg_metrics[k]:.4f}")
+            acc_results.append(f"{k:>10}: {avg_metrics[k]:.8f}")
 
 
         self.logger.log_event(
