@@ -99,7 +99,7 @@
     "start_time": "2025-12-06_23-17-41",
     "train_started": true,
     "finished": true,
-    "training_log_name": "exp_7",
+    "training_log_name": "exp_7 only spans",
     "log_details_file": "./logs/log_6_2025-12-06_23-17-41.log",
     "end_date": "2025-12-06_23-38-51",
     "queries_size": 5689,
@@ -111,6 +111,24 @@
     "last_avg_mrr": 0.9853039331985324,
     "last_avg_loss": 0.008399496587474695,
     "result_encoder_dir": "./output/encoder_6/"
+  },
+  {
+    "id": 7,
+    "start_time": "2025-12-07_00-16-56",
+    "training_log_name": "exp_7 cls and between spans",
+    "train_started": true,
+    "finished": true,
+    "log_details_file": "./logs/log_7_2025-12-07_00-16-56.log",
+    "end_date": "2025-12-07_00-42-19",
+    "queries_size": 5689,
+    "dictionary_size": 90510,
+    "trained_period": "0h, 20mins, 22secs",
+    "epochs": 10,
+    "last_faiss_recall@15": 0.9854104412023202,
+    "last_avg_acc_5": 0.985252808988764,
+    "last_avg_mrr": 0.9850811486163836,
+    "last_avg_loss": 0.0024638666530673423,
+    "result_encoder_dir": "./output/encoder_7/"
   },
   {
     "id": 12,
