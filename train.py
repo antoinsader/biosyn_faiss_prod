@@ -1,4 +1,6 @@
 
+# python train.py --training_log_name='big dictionary' --hard_positives_num=0 --hard_negatives_num=0 --num_epochs=6  --topk=50 --train_batch_size=32 --enable_gradient_checkpoint
+
 import logging
 import torch
 import gc
@@ -37,6 +39,8 @@ class Trainer:
         self.tokens_paths = TokensPaths(cfg, dictionary_key=dictionary_key, queries_key='train_queries')
         self.encoder = MyEncoder(cfg)
         self.model = Reranker(self.encoder, self.cfg)
+        if hasattr(torch, "compile"):
+            self.model = torch.compile(self.model)
         self.dataset = MyDataset(self.tokens_paths, cfg)
         self.faiss = MyFaiss(cfg, save_index_path=self.faiss_path,  dataset=self.dataset, tokens_paths=self.tokens_paths, encoder=self.encoder)
         self.chkpoint_path = cfg.paths.checkpoint_path
@@ -54,40 +58,46 @@ class Trainer:
 
 
 
-    def train_one_batch(self, data_loader_item):
+    def train_one_batch(self, data_loader_item, batch_idx):
         """
             What we will do in one batch is:
                 - extracting batch_x, batch_y from the dataloader item
                 - Extract batch_query_tokens, batch_candidates_tokens from batch_x
                 - Forward pass in the reranker and getting scores. (scores shape is batch_size, topk which is cosine similarity between each query and its candidates)
-                - we calculate the loss based on the scores, we use either marginal_nll (better in our case) or info_nce_loss
+                - we calculate the loss based on the scores, we use marginal_nll 
                 - We do backpropogation, scale, optimize, update and step
                 - We calculate accuracy and mrr metrics for the batch
         """
-        self.model.optimizer.zero_grad(set_to_none=True)
+        # self.model.optimizer.zero_grad(set_to_none=True) # Moved to step logic
+
         with torch.amp.autocast(device_type="cuda", enabled=(self.use_cuda and self.cfg.train.use_amp)):
             batch_x, batch_y = data_loader_item
             batch_query_tokens, batch_candidates_tokens = batch_x
             batch_scores = self.model(batch_query_tokens, batch_candidates_tokens)
             loss = self.model.get_loss(batch_scores, batch_y)
 
+        # Scale loss
+        loss = loss / self.cfg.train.gradient_accumulation_steps
         self.scaler.scale(loss).backward()
-        self.scaler.unscale_(self.model.optimizer)
-        torch.nn.utils.clip_grad_norm_(self.model.encoder.encoder.parameters(), max_norm=1.0)
+        
+        # Step only after accumulation steps
+        if (batch_idx + 1) % self.cfg.train.gradient_accumulation_steps == 0:
+            self.scaler.unscale_(self.model.optimizer)
+            torch.nn.utils.clip_grad_norm_(self.model.encoder.encoder.parameters(), max_norm=1.0)
+
+            self.scaler.step(self.model.optimizer)
+            self.scaler.update()
+            self.scheduler.step()
+            self.model.optimizer.zero_grad(set_to_none=True)
 
 
-        self.scaler.step(self.model.optimizer)
-        self.scaler.update()
-        self.scheduler.step()
-
-
-
-        accuracy_5, mrr = compute_metrics(batch_scores.detach().cpu(), batch_y.cpu(), k=5)
-
-
-
-        del batch_x, batch_y, batch_scores
-        return accuracy_5, mrr, loss.item()
+        # Compute metrics only at intervals
+        if (batch_idx + 1) % self.cfg.train.metric_compute_interval == 0:
+            accuracy_5, mrr, batch_margin = compute_metrics(batch_scores, batch_y, k=5)
+            return loss.detach() * self.cfg.train.gradient_accumulation_steps, accuracy_5, mrr, batch_margin
+        
+        # Return None for metrics if not computed
+        return loss.detach() * self.cfg.train.gradient_accumulation_steps, None, None, None
 
 
 
@@ -113,16 +123,17 @@ class Trainer:
             self.encoder.freeze_lower_layers(max(0, 7 - epoch ))
 
 
-
+        
         # ====================================
         #       BUILD FAISS
         # ====================================
-        build_faiss_start_time = time.time()
-        self.faiss.build_faiss(self.cfg.faiss.build_batch_size)
-        self.logger.log_event("FAISS BUILD", message="FAISS built from dictionary embs",
-                 epoch=epoch, t0=build_faiss_start_time)
-
-
+        if epoch == 1 or epoch == self.cfg.train.num_epochs  or  (epoch - 1) % self.cfg.train.update_faiss_every_n_epochs == 0:
+            build_faiss_start_time = time.time()
+            self.faiss.build_faiss(self.cfg.faiss.build_batch_size)
+            self.logger.log_event("FAISS BUILD", message="FAISS built from dictionary embs",
+                     epoch=epoch, t0=build_faiss_start_time)
+        else:
+             self.logger.log_event("FAISS BUILD", message="FAISS build skipped this epoch", epoch=epoch, log_memory=False)
 
         # ====================================
         #       SEARCH FAISS
@@ -135,8 +146,8 @@ class Trainer:
 
 
         self.dataset.set_candidates(candidates_idxs)
-        recall_faiss = self.faiss.compute_faiss_recall_at_k(candidates_idxs, k=self.topk)
-        self.logger.log_event(f"Faiss recall@{self.topk}", message= f"{recall_faiss:.4f}", epoch=epoch, log_memory=False)
+        recall_faiss, recall_faiss_k2 = self.faiss.compute_faiss_recall_at_k(candidates_idxs, k=self.topk, k2=5)
+        self.logger.log_event(f"Faiss recall", message= f"faiss recall@{self.topk}: {recall_faiss:.4f}. faiss recall@5: {recall_faiss_k2:.4f}", epoch=epoch, log_memory=False)
 
 
 
@@ -146,27 +157,49 @@ class Trainer:
             shuffle=True,
             pin_memory=self.use_cuda,
             num_workers=self.cfg.train.num_workers,
-            persistent_workers=False
+            persistent_workers=(self.cfg.train.num_workers > 0),  # Keep workers alive between batches
+            prefetch_factor=2 if self.cfg.train.num_workers > 0 else None  # Prefetch 2 batches per worker
         )
         batches_train_start_time = time.time()
-        epoch_loss, epoch_accuracy_5, epoch_mrr = 0.0, 0.0, 0.0
+        epoch_loss, epoch_accuracy_5, epoch_mrr, epoch_margin = 0.0, 0.0, 0.0, 0.0
         n_batches = 0
 
-
+        self.model.optimizer.zero_grad(set_to_none=True) # Ensure grads are zero at start of epoch
+        
+        n_metric_batches = 0
+        epoch_loss_tensor = 0.0
         for i, data_loader_item in tqdm(enumerate(my_loader), total=len(my_loader), desc=f"epoch@{epoch} - Training batches"):
-            accuracy_5, mrr, loss = self.train_one_batch(data_loader_item)
-            epoch_accuracy_5 += accuracy_5
-            epoch_mrr += mrr
-            epoch_loss += loss
+            loss, accuracy_5, mrr, batch_margin = self.train_one_batch(data_loader_item, i)
+            
+            if torch.is_tensor(loss):
+                epoch_loss_tensor += loss.detach()
+            else:
+                epoch_loss_tensor += loss
+            
+            if accuracy_5 is not None:
+                epoch_accuracy_5 += accuracy_5
+                epoch_mrr += mrr
+                epoch_margin += batch_margin
+                n_metric_batches += 1
+            
             n_batches += 1
 
+            # if i % 100 == 0:
+            #     self.logger.log_event(f"Training stats - batch {i}", message=f"Loss: {loss.item():.4f}", log_memory=True, epoch=epoch)
 
-        avg_loss = epoch_loss / max(1, n_batches)
-        avg_mrr = epoch_mrr / max(1, n_batches)
-        avg_accuracy_5 = epoch_accuracy_5 / max(1, n_batches)
+        if torch.is_tensor(epoch_loss_tensor):
+            epoch_loss = epoch_loss_tensor.item()
+        else:
+            epoch_loss = epoch_loss_tensor
+
+        avg_loss = (epoch_loss / max(1, n_batches))
+        avg_mrr = (epoch_mrr / max(1, n_metric_batches))
+        avg_accuracy_5 = (epoch_accuracy_5 / max(1, n_metric_batches))
+        avg_margin = (epoch_margin / max(1, n_metric_batches))  # Average
+
         self.logger.log_event(
             "Epoch summary",
-            message=f"Epoch average loss={avg_loss:.3f}, average mrr={avg_mrr:.4f}, average accuracy@5={avg_accuracy_5:.4f}.   loss_temp={self.cfg.train.loss_temperature:.3f}",
+            message=f"Epoch average loss={avg_loss:.3f}, average margin={avg_margin:.4f}, average mrr={avg_mrr:.4f}, average accuracy@5={avg_accuracy_5:.4f}.   loss_temp={self.cfg.train.loss_temperature:.3f}",
             epoch=epoch,
             t0=batches_train_start_time
         )
@@ -190,9 +223,16 @@ class Trainer:
         return chkpt["epoch"] + 1
 
     def save_checkpoint(self,epoch):
+        model_state = {
+            "encoder": self.model.encoder.get_state_dict(),
+        }
+        if self.model.encoder.projection is not None:
+             model_state["projection"] = self.model.encoder.projection.state_dict()
+
         ckpt = {
             "epoch": epoch,
-            "model_state": self.model.encoder.get_state_dict(),
+            "model_state": model_state,
+            
             "optimizer_state": self.model.optimizer.state_dict(),
             "scheduler_state": self.scheduler.state_dict(),
             "scaler_state": self.scaler.state_dict(),
@@ -225,11 +265,11 @@ class Trainer:
         #       2- EPOCH TRAINING
         # ===================================================
         avergae_loss, average_mrr, average_accuracy_5, last_faiss_recall = 0.0, 0.0, 0.0, 0.0
-        assert int(start_epoch) > 0 and int(start_epoch) < self.cfg.train.num_epochs 
+        assert int(start_epoch) > 0 and int(start_epoch) <= self.cfg.train.num_epochs 
         for epoch in range(start_epoch, self.cfg.train.num_epochs + 1):
             if self.use_cuda:
                 torch.cuda.reset_peak_memory_stats()
-            self.cfg.train.loss_temperature = max(0.05, 0.15 * (0.88 ** (epoch - 1)))
+            # self.cfg.train.loss_temperature = max(0.05, 0.15 * (0.88 ** (epoch - 1)))
 
             avergae_loss, average_mrr, average_accuracy_5, last_faiss_recall = self.train_one_epoch(epoch)
             if self.cfg.train.save_checkpoints:
@@ -255,6 +295,9 @@ class Trainer:
 
         self.encoder.save_state(self.result_encoder_dir)
         self.save_checkpoint(epoch='last')
+        self.faiss.save_index()
+
+    
 
         self.logger.log_event("Train finished", t0=full_train_start_time, log_memory=False)
         self.logger.log_event("Main info: " , message=self.checkpointing.current_experiment, log_memory=False)

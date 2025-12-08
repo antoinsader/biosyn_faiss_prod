@@ -2,6 +2,15 @@ import argparse
 from dataclasses import dataclass, field
 import math
 import os
+from enum import Enum
+
+
+class EncodingType(str, Enum):
+    CLS_ONLY = "cls_only"
+    BETWEEN_SPANS = "between_spans"
+    SPANS_ONLY = "spans_only"
+    CLS_AND_BETWEEN_SPANS = "cls_and_between_spans"
+    CLS_AND_SPANS = "cls_and_spans"
 
 
 
@@ -21,6 +30,7 @@ class PathsConfig:
     
     dictionary_raw_path = "./data/raw/train_dictionary.txt"
     queries_raw_dir = "./data/raw/traindev"
+    test_queries_raw_dir = "./data/raw/test"
     tokenizer_meta_path = "./data/tokenizer.json"
 
     result_encoder_dir = None
@@ -65,38 +75,59 @@ class PathsConfig:
 
 @dataclass
 class TokensConfig:
-    dictionary_max_length = 120
-    queries_max_length = 120
+
+
+
+    dictionary_without_annotate_max_length = 25
+    queries_without_annotate_max_length = 25
+
+
+    queries_max_length = 75 #max tokens
+    dictionary_max_length = 75
+    dictionary_max_chars_length = 128 #if less would be skipped
+
     tokenize_batch_size : int = 128_000
     raw_test_dir:str = None
 
     skip_tokenize_dictionary: bool = False
     skip_tokenize_queries: bool = False
-    skip_split :bool=False
-    test_split_percentage: float = 0.8
+    skip_tokenize_test_queries: bool = False
+    split_train_queries :bool=False
+    test_split_percentage: float = 0.2
 
+
+    queries_annotate:bool = True
+    dictionaries_annotate: bool = True
+    
+    dictionary_annotation_add_synonyms: bool = False
 
     query_tokens_window_words_in_text = 10 #5 words before mention start, 5 words after mention start
-
-    special_tokens = {
-        'additional_special_tokens': [
-            '[MENTION_CONTEXT_START]', '[MENTION_CONTEXT_END]',  # existing
-            '[MENTION_NAME_START]', '[MENTION_NAME_END]',
-            '[CONTEXT_START]', '[CONTEXT_END]',
-            '[TYPE_START]', '[TYPE_END]'
-        ]
-    }
+    special_tokens = {"additional_special_tokens": ["[MS]", "[ME]"]}
     special_tokens_dict = {
-        "mention_name_start": "[MENTION_NAME_START]",
-        "mention_name_end": "[MENTION_NAME_END]",
-        "mention_in_sentence_start": "[MENTION_CONTEXT_START]",
-        "mention_in_sentence_end": "[MENTION_CONTEXT_END]",
-        "context_start": "[CONTEXT_START]",
-        "context_end": "[CONTEXT_END]",
-        "type_start": "[TYPE_START]",
-        "type_end": "[TYPE_END]",
-        
+        "mention_start": "[MS]",
+        "mention_end": "[ME]",
     }
+
+
+    # special_tokens = {
+    #     'additional_special_tokens': [
+    #         '[MENTION_CONTEXT_START]', '[MENTION_CONTEXT_END]',  # existing
+    #         '[MENTION_NAME_START]', '[MENTION_NAME_END]',
+    #         '[CONTEXT_START]', '[CONTEXT_END]',
+    #         '[TYPE_START]', '[TYPE_END]'
+    #     ]
+    # }
+    # special_tokens_dict = {
+    #     "mention_name_start": "[MENTION_NAME_START]",
+    #     "mention_name_end": "[MENTION_NAME_END]",
+    #     "mention_in_sentence_start": "[MENTION_CONTEXT_START]",
+    #     "mention_in_sentence_end": "[MENTION_CONTEXT_END]",
+    #     "context_start": "[CONTEXT_START]",
+    #     "context_end": "[CONTEXT_END]",
+    #     "type_start": "[TYPE_START]",
+    #     "type_end": "[TYPE_END]",
+        
+    # }
 
 
 
@@ -106,30 +137,38 @@ class LoggerConfig:
     train_log_name: str = ""
 
 
-
+@dataclass
+class InferenceConfig:
+    mention: str = ""
+    topk: int = 5
 @dataclass
 class ModelConfig:
     model_name : str = 'dmis-lab/biobert-base-cased-v1.1'
     pooling : str =  'hybrid' #[mean, cls, hybrid]
     normalize: bool = True
     hidden_size: int = 768
+    encoding_type : EncodingType = EncodingType.CLS_AND_BETWEEN_SPANS
 
 
 @dataclass
 class TrainingConfig:
     num_epochs: int = 10
     batch_size: int = 16
-    learning_rate: float = 5e-5
+    
+
+    learning_rate: float = 1e-5  #5e-6 #5e-5 
+
+
     weight_decay: float = 0.001
     num_workers: int = 8
     topk: int = 20
-    loss_type: str = "marginal_nll" # info_nce_loss
     optimizer_name: str = "AdamW" # Adam
     use_amp: bool = True
-    loss_temperature: float = 0.2 # if small dict 0.07
+    loss_temperature: float = 0.06
     save_checkpoints:bool = True
     load_last_checkpoint:bool = True
     use_small_dictionary: bool = False
+    load_data_to_ram: bool = True
 
     inject_hard_negatives_candidates:bool= False
     hard_negatives_num:int= 0
@@ -137,11 +176,19 @@ class TrainingConfig:
     hard_positives_num:int= 0
 
     freeze_lower_layer_epoch_max:int=2
+    enable_gradient_checkpoint:bool=False
+    gradient_accumulation_steps: int = 1
+    update_faiss_every_n_epochs: int = 1
+    metric_compute_interval: int = 500
+
+
 
 @dataclass
 class FaissConfig:
-    build_batch_size: int = 4096
-    search_batch_size: int = 4096
+    use_faiss : bool = True
+
+    build_batch_size: int = 8000
+    search_batch_size: int = 8000
 
     save_index_path = None
 
@@ -173,6 +220,7 @@ class GlobalConfig:
     train: TrainingConfig = field(default_factory=TrainingConfig)
     faiss: FaissConfig = field(default_factory=FaissConfig)
     logger: LoggerConfig = field(default_factory=LoggerConfig)
+    inference: InferenceConfig = field(default_factory=InferenceConfig)
 
     skip_eval: bool = False
     skip_train: bool = False
@@ -210,14 +258,18 @@ def tokenizer_parse_args():
 
     parser.add_argument('--dictionary_path',  type=str)
     parser.add_argument('--queries_dir',  type=str)
-
-    parser.add_argument('--dictionary_max_length',  type=int)
-    parser.add_argument('--queries_max_length',  type=int)
+    parser.add_argument('--test_queries_dir',  type=str)
+    parser.add_argument('--split_train_queries',  action="store_true")
     parser.add_argument('--test_split_percentage',  type=float)
 
     parser.add_argument('--skip_tokenizing_dictionary',  action="store_true")
     parser.add_argument('--skip_tokenizing_queries',  action="store_true")
-    parser.add_argument('--skip_split',  action="store_true")
+    parser.add_argument('--skip_tokenizing_test_queries',  action="store_true")
+
+
+    parser.add_argument('--dictionary_annotation_add_synonyms',  action="store_true")
+    parser.add_argument('--no_queries_annotate',  action="store_true")
+    parser.add_argument('--no_dictionaries_annotate',  action="store_true")
 
     args = parser.parse_args()
 
@@ -229,9 +281,9 @@ def tokenizer_parse_args():
         cfg.tokenize.skip_tokenize_dictionary = True
     if args.skip_tokenizing_queries:
         cfg.tokenize.skip_tokenize_queries = True
-    if args.skip_split:
-        cfg.tokenize.skip_split = True
-    
+    if args.skip_tokenizing_test_queries:
+        cfg.tokenize.skip_tokenize_test_queries = True
+
     if args.dictionary_path:
         assert os.path.exists(args.dictionary_path), f'Dict path: {args.dictionary_path} not exists'
         cfg.paths.dictionary_raw_path = args.dictionary_path
@@ -240,15 +292,35 @@ def tokenizer_parse_args():
         assert os.path.isdir(args.queries_dir), f'Queries dir: {args.queries_dir} not exists'
         cfg.paths.queries_raw_dir = args.queries_dir
 
-    if args.queries_max_length:
-        cfg.tokenize.queries_max_length = args.queries_max_length
+    if args.test_queries_dir:
+        assert os.path.isdir(args.test_queries_dir), f'Test queries dir: {args.test_queries_dir} not exists'
+        cfg.paths.test_queries_raw_dir = args.test_queries_dir
 
-    if args.dictionary_max_length:
-        cfg.tokenize.dictionary_max_length = args.dictionary_max_length
+
+    if args.split_train_queries:
+        cfg.tokenize.split_train_queries = True
 
     if args.test_split_percentage:
+        cfg.tokenize.split_train_queries = True
         assert 0.0 <= args.test_split_percentage <= 1.0 
         cfg.tokenize.test_split_percentage = args.test_split_percentage
+
+
+    if args.dictionary_annotation_add_synonyms:
+        cfg.tokenize.dictionary_annotation_add_synonyms = True
+    else:
+        print(f"You are not adding synonyms to the dictionary annotations, recent results shown that adding synonyms is better, if you want to add, consider doing --dictionary_annotation_add_synonyms")
+
+    if args.no_queries_annotate:
+        cfg.tokenize.queries_annotate = False
+    else:
+        cfg.tokenize.queries_annotate = True
+
+    if args.no_dictionaries_annotate:
+        cfg.tokenize.dictionaries_annotate = False
+    else:
+        cfg.tokenize.dictionaries_annotate = True
+
 
     return cfg
 
@@ -287,6 +359,37 @@ def eval_parse_args():
 
     return cfg
 
+def inference_parse_args():
+    cfg = GlobalConfig()
+    parser = argparse.ArgumentParser(description='ranker train')
+ # Required arguments
+    parser.add_argument('--mention', type=str, required=True, 
+                        help='Medical mention/entity to normalize (e.g., "breast cancer")')
+    
+    parser.add_argument('--result_encoder_dir', required=True,
+                        help='Result encoder dir, you should have this after tain, the dir is where the encoder files are saved')
+
+    # Optional arguments
+    parser.add_argument('--topk', type=int, default=5,
+                        help='Number of top candidates to retrieve (default: 5)')
+    
+
+    args = parser.parse_args()
+
+    if args.result_encoder_dir:
+        assert os.path.isdir(args.result_encoder_dir)
+        cfg.paths.result_encoder_dir = args.result_encoder_dir
+
+        cfg.paths.faiss_path = os.path.join(args.result_encoder_dir, "faiss_index.faiss")
+        assert os.path.exists(cfg.paths.faiss_path), f'Faiss not found,  {cfg.paths.faiss_path}'
+
+    if args.topk:
+        cfg.inference.topk = args.topk
+
+    cfg.inference.mention = args.mention
+
+    return cfg
+
 def train_parse_args():
     """
     Parse input arguments
@@ -314,15 +417,17 @@ def train_parse_args():
 
     parser.add_argument('--learning_rate', help='train learning rate', type=float, required=False)
     parser.add_argument('--weight_decay', help='train weight decay', type=float, required=False)
-    parser.add_argument('--loss_type', help='Either marginal_nll or info_nce_loss', type=str, required=False)
     
 
     parser.add_argument('--build_faiss_batch_size', help='Batch size when building faiss index ', type=int, required=False)
     parser.add_argument('--search_faiss_batch_size', help='Batch size when searching in faiss ', type=int, required=False)
 
-    parser.add_argument('--use_amp',  action="store_true")
+    parser.add_argument('--no_use_amp',  action="store_true")
     parser.add_argument('--force_ivfpq',  action="store_true")
+    parser.add_argument('--no_load_data_to_ram',  action="store_true")
+    parser.add_argument('--enable_gradient_checkpoint',  action="store_true")
 
+    # parser.add_argument('--no_faiss',  action="store_true")
 
 
 
@@ -336,7 +441,7 @@ def train_parse_args():
         cfg.model.model_name = args.model_name_or_path
 
     if args.num_epochs:
-        assert  8 <= args.num_epochs < 25, f'Num epochs should be between 8 and 25'
+        assert  1 <= args.num_epochs < 25, f'Num epochs should be between 1 and 25'
         cfg.train.num_epochs = args.num_epochs
     if args.train_batch_size:
         cfg.train.batch_size = args.train_batch_size
@@ -365,9 +470,6 @@ def train_parse_args():
         cfg.train.learning_rate = args.learning_rate
     if args.weight_decay:
         cfg.train.weight_decay = args.weight_decay
-    if args.loss_type:
-        assert args.loss_type in ['marginal_nll','info_nce_loss']
-        cfg.train.loss_type = args.loss_type
     if args.build_faiss_batch_size:
         cfg.faiss.build_batch_size = args.build_faiss_batch_size
     if args.search_faiss_batch_size:
@@ -380,11 +482,29 @@ def train_parse_args():
         cfg.train.use_small_dictionary = True
 
 
-    if args.use_amp:
-        cfg.train.use_amp = args.use_amp
+    if args.no_use_amp:
+        cfg.train.use_amp = False
+    else:
+        cfg.train.use_amp = True
 
     if args.force_ivfpq :
         cfg.faiss.force_ivfpq = True
+
+    if args.no_load_data_to_ram:
+        cfg.train.load_data_to_ram = False
+
+    if args.enable_gradient_checkpoint:
+        cfg.train.enable_gradient_checkpoint = True
+    else:
+        print(f"If your dictionary entries are big (more than 1m), you should consider enabling gradient checkpointing, to not have OOM (it would be slower but more stable)")
+
+
+    # if args.no_faiss:
+    #     print(f"******IMPORTANT*****: YOU ARE NOT USING FAISS")
+    #     cfg.faiss.use_faiss = False
+    # else:
+    #     cfg.faiss.use_faiss = True
+
 
     return cfg
 

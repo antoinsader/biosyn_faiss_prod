@@ -40,8 +40,11 @@ class Evaluator:
         self.device = "cuda" if self.use_cuda else "cpu"
         self.dataset = MyDataset(self.tokens_paths, cfg)
         self.encoder = MyEncoder(cfg)
+        self.encoder.load_state(self.encoder_dir) 
         self.model = Reranker(self.encoder, self.cfg)
         self.faiss = MyFaiss(cfg, save_index_path="",  dataset=self.dataset, tokens_paths=self.tokens_paths, encoder=self.encoder)
+        # self.faiss.build_faiss(cfg.faiss.build_batch_size)
+        
         self.faiss.load_faiss_index(cfg.paths.faiss_path)
         self.topk = cfg.train.topk
 
@@ -50,8 +53,6 @@ class Evaluator:
         candidates_idxs = self.faiss.search_faiss(self.cfg.faiss.search_batch_size) # (queries_N, topk)
         candidates_idxs = candidates_idxs.astype(np.int64)
         self.dataset.set_candidates(candidates_idxs)
-        recall_faiss = self.faiss.compute_faiss_recall_at_k(candidates_idxs, k=self.topk)
-        self.logger.log_event(f"Faiss recall@{self.topk}", message= f"{recall_faiss:.4f}",  log_memory=False)
 
         my_loader = torch.utils.data.DataLoader(
             self.dataset,
@@ -82,7 +83,7 @@ class Evaluator:
                 batch_pred = self.model(query_tokens, candidate_tokens)  # [batch_size, hidden_size]
                 loss = self.model.get_loss(batch_pred, batch_y)
 
-                res = self._compute_metrics_eval(batch_pred.detach(), batch_y, multiple_ks=[1, 2,4, 5, 7, 10, 12, 15, 17, 20])
+                res = self._compute_metrics_eval(batch_pred.detach().cpu(), batch_y.cpu(), multiple_ks=[1, 2,4, 5, 7, 10, 12, 15, 17, 20])
                 res["loss"] = loss.item()
                 all_metrics.append(res)
                 total_samples += batch_size
@@ -90,7 +91,7 @@ class Evaluator:
         avg_metrics = {k: np.mean([m[k] for m in all_metrics]) for k in all_metrics[0].keys()}
         self.logger.log_event(
             event_tag="Evaluation results",
-            message=f"Average Loss: {avg_metrics['loss']:.4f} \n  Mean Reciprocal Rank (MRR): {avg_metrics['mrr']:.4f} \n ",
+            message=f"Average Loss: {avg_metrics['loss']:.8f} \n  Mean Reciprocal Rank (MRR): {avg_metrics['mrr']:.8f} \n ",
             log_memory=False
         )
 
@@ -98,7 +99,7 @@ class Evaluator:
         acc_results = []
         for k in sorted([kk for kk in avg_metrics.keys() if kk.startswith('acc@')],
                         key=lambda x: int(x.split('@')[1])):
-            acc_results.append(f"{k:>10}: {avg_metrics[k]:.4f}")
+            acc_results.append(f"{k:>10}: {avg_metrics[k]:.8f}")
 
 
         self.logger.log_event(
@@ -112,11 +113,10 @@ class Evaluator:
     def _compute_metrics_eval(self, scores, targets, multiple_ks=None, k=5):
         """
         Compute top-k accuracy and MRR for retrieval scores.
-        Works for both info_nce_loss (int targets) and marginal_nll (float vector targets).
 
         Args:
             scores (Tensor): shape [batch_size, topk]
-            targets (Tensor): either long (for info_nce) or float (for marginal_nll)
+            targets (Tensor): float (for marginal_nll)
             multiple_ks (list[int], optional): e.g., [1, 5, 10]. If provided, returns multiple accuracies.
             k (int): default top-k if multiple_ks not provided
 
@@ -131,56 +131,30 @@ class Evaluator:
             results = {}
             total_rr_sum, total_valid = 0.0, 0
 
-            # Handle info_nce style targets (single positive index)
-            if targets.dtype == torch.long:
-                topk_preds = scores.argsort(dim=-1, descending=True)  # [B, topk]
-                acc_counts = {kk: 0 for kk in ks}
+            positives = (targets > 0.5)
+            topk_preds = scores.argsort(dim=-1, descending=True)
+            acc_counts = {kk: 0 for kk in ks}
 
-                for i in range(batch_size):
-                    t = targets[i].item()
-                    if t == -100 or t < 0 or t >= topk:
-                        continue
-                    total_valid += 1
-                    preds = topk_preds[i].tolist()
+            for i in range(batch_size):
+                pos_idxs = positives[i].nonzero(as_tuple=True)[0].tolist()
+                if len(pos_idxs) == 0:
+                    continue
+                total_valid += 1
+                preds = topk_preds[i].tolist()
 
-                    # Reciprocal rank
-                    rank = preds.index(t) + 1 if t in preds else topk + 1
-                    total_rr_sum += 1.0 / rank
-
-                    for kk in ks:
-                        if t in preds[:kk]:
-                            acc_counts[kk] += 1
+                # Reciprocal rank of first correct
+                for r, idx in enumerate(preds, start=1):
+                    if idx in pos_idxs:
+                        total_rr_sum += 1.0 / r
+                        break
 
                 for kk in ks:
-                    results[f"acc@{kk}"] = acc_counts[kk] / max(total_valid, 1)
-                results["mrr"] = total_rr_sum / max(total_valid, 1)
+                    if any(p in pos_idxs for p in preds[:kk]):
+                        acc_counts[kk] += 1
 
-            # Handle marginal_nll style targets (float vector of 0/1)
-            else:
-                positives = (targets > 0.5)
-                topk_preds = scores.argsort(dim=-1, descending=True)
-                acc_counts = {kk: 0 for kk in ks}
-
-                for i in range(batch_size):
-                    pos_idxs = positives[i].nonzero(as_tuple=True)[0].tolist()
-                    if len(pos_idxs) == 0:
-                        continue
-                    total_valid += 1
-                    preds = topk_preds[i].tolist()
-
-                    # Reciprocal rank of first correct
-                    for r, idx in enumerate(preds, start=1):
-                        if idx in pos_idxs:
-                            total_rr_sum += 1.0 / r
-                            break
-
-                    for kk in ks:
-                        if any(p in pos_idxs for p in preds[:kk]):
-                            acc_counts[kk] += 1
-
-                for kk in ks:
-                    results[f"acc@{kk}"] = acc_counts[kk] / max(total_valid, 1)
-                results["mrr"] = total_rr_sum / max(total_valid, 1)
+            for kk in ks:
+                results[f"acc@{kk}"] = acc_counts[kk] / max(total_valid, 1)
+            results["mrr"] = total_rr_sum / max(total_valid, 1)
 
         return results
 

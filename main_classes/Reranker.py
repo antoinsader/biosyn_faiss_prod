@@ -4,7 +4,7 @@ import torch.optim as optim
 
 
 from config import  GlobalConfig
-from helpers.utils import  info_nce_loss, marginal_nll
+from helpers.utils import  marginal_nll
 from main_classes.MyEncoder import MyEncoder
 
 # =======================
@@ -24,15 +24,19 @@ class Reranker(nn.Module):
 
         self.cfg = cfg.train
         self.encoder = encoder
-        self.criterion = info_nce_loss if self.cfg.loss_type == 'info_nce_loss' else marginal_nll
+        self.criterion =  marginal_nll
 
         self.use_cuda = torch.cuda.is_available()
         self.device = "cuda" if self.use_cuda else "cpu"
 
         assert self.cfg.optimizer_name == 'AdamW', f'Currently only AdamW available'
 
+        params = list(self.encoder.encoder.parameters())
+        if self.encoder.projection is not None:
+            params += list(self.encoder.projection.parameters())
+
         self.optimizer = optim.AdamW(
-            self.encoder.encoder.parameters(),
+            params,
             lr=self.cfg.learning_rate,
             weight_decay=self.cfg.weight_decay,
             fused=self.use_cuda

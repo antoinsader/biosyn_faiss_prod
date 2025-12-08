@@ -18,7 +18,7 @@ if __name__ == '__main__':
     queries_cuis = np.array(dataset.queries_cuis)
     unique_query_cuis = np.unique(queries_cuis)
     target_size = cfg.minimize_target
-    assert target_size > queries_cuis
+    assert target_size > len(queries_cuis)
 
 
     print(f"Dictionary size before: {N_dict:,}")

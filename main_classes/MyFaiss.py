@@ -49,6 +49,8 @@ class MyFaiss():
 
         num_threads = min(32, os.cpu_count() or 8)
         faiss.omp_set_num_threads(num_threads)
+        
+        self.flat_index_used = True
 
         self.faiss_index = None
         self.dictionary_entries_n = None
@@ -80,7 +82,9 @@ class MyFaiss():
         #Init the index
         index = faiss.GpuIndexIVFPQ(gpu_resources, quantizer, self.hidden_size, num_clusters, num_quantizers, nbits)
 
-        index.useFloat16LookupTables = self.use_amp
+        # useFloat16LookupTables was removed in newer FAISS versions
+        if hasattr(index, 'useFloat16LookupTables'):
+            index.useFloat16LookupTables = self.use_amp
         #nprobe is the numbers of clusters to be visited during search, higher means more accurate but slower
         # 1-10% of nlist, we are using now 6%
         index.nprobe = self.cfg_faiss.n_probe(num_clusters)
@@ -100,8 +104,10 @@ class MyFaiss():
         if N >= 1_000_000 or self.cfg_faiss.force_ivfpq:
             self._create_ivfpq_index(N)
             self.train_samples(N)
+            self.flat_index_used = False
         else:
             self._create_flat_index()
+            self.flat_index_used = True
 
 
 
@@ -134,7 +140,7 @@ class MyFaiss():
 
             inp  = torch.as_tensor(dictionary_inputs_ids[batch_idx], device=self.device)
             att = torch.as_tensor(dictionary_attention_masks[batch_idx],device=self.device)
-
+        
             batch_embeds = self.encoder.get_emb(inp, att, use_amp=self.use_amp, use_no_grad=True)
             batch_embeds = batch_embeds.contiguous()
             samples_embeds[cursor : cursor+(end-start)] = batch_embeds
@@ -160,6 +166,9 @@ class MyFaiss():
             self.init_index(N)
         else:
             self.faiss_index.reset()
+            if not self.flat_index_used:
+                self.train_samples(N)
+                
         assert self.faiss_index is not None
 
 
@@ -202,14 +211,17 @@ class MyFaiss():
                 embs = embs.cpu().numpy().astype(np.float32)
 
             _, chunk_cand_idxs = faiss_index.search(embs, self.topk)
-
-            candidates[start:end] = chunk_cand_idxs.cpu().detach().numpy()
+            if self.use_cuda:
+                candidates[start:end] = chunk_cand_idxs.cpu().detach().numpy()
+            else:
+                candidates[start:end] = chunk_cand_idxs
+            
             del inp, att, embs
         del query_inputs, query_att
         gc.collect()
         return candidates
 
-    def compute_faiss_recall_at_k(self,candidates_idxs, k=10):
+    def compute_faiss_recall_at_k(self,candidates_idxs, k=10, k2=5):
         """
             For each query, there are topk candidates.
             How many queries have in their first k candidates the correct cui.
@@ -217,19 +229,27 @@ class MyFaiss():
 
         assert candidates_idxs is not None
         k = min(self.topk, k)
+        k2 = min(self.topk, k2)
 
         queries_cuis = self.dataset.queries_cuis
         dictionary_cuis = np.array(self.dataset.dictionary_cuis)
         num_queries = len(queries_cuis)
 
-        correct = 0
-        for i in range(num_queries):
-            query_cui = queries_cuis[i]
-            retreived_candidates_cuis = dictionary_cuis[candidates_idxs[i, :k]]
-            if query_cui in retreived_candidates_cuis:
-                correct += 1
+        # Vectorized implementation
+        # Get CUIs for all retrieved candidates: (num_queries, k)
+        retrieved_candidates_cuis = dictionary_cuis[candidates_idxs[:, :k]]
+        retrieved_candidates_cuis_k2 = dictionary_cuis[candidates_idxs[:, :k2]]
+        
+        # Check if query_cui is present in each row of retrieved candidates
+        # queries_cuis[:, None] adds a dimension to make it (num_queries, 1) for broadcasting
+        matches = (retrieved_candidates_cuis == queries_cuis[:, None])
+        matches_k2 = (retrieved_candidates_cuis_k2 == queries_cuis[:, None])
+        
+        # A query is correct if there is at least one match in the top k
+        correct = np.any(matches, axis=1).sum()
+        correct_k2 = np.any(matches_k2, axis=1).sum()
 
-        return correct / max(num_queries, 1)
+        return correct / max(num_queries, 1), correct_k2 / max(num_queries, 1)
 
 
     def load_faiss_index(self, path):
@@ -251,5 +271,6 @@ class MyFaiss():
             Save index to save_index_path
         """
         faiss.write_index(faiss.index_gpu_to_cpu(self.faiss_index), self.save_index_path)
+        print(f'FAISS Index saved to {self.save_index_path}')
         return self.save_index_path
 

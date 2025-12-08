@@ -2,5 +2,5 @@
 /myenv
 .env
 __pycache__
-
+/output
 

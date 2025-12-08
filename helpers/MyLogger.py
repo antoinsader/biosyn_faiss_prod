@@ -3,7 +3,12 @@
 
 
 import datetime
-import  json, psutil, os, torch, time, logging
+import  json, os, torch, time, logging
+try:
+    import psutil
+except ImportError:
+    psutil = None
+
 from config import GlobalConfig
 
 
@@ -44,7 +49,10 @@ class MyLogger:
 
         self.use_cuda = torch.cuda.is_available()
         self.device = "cuda" if self.use_cuda else "cpu"
-        self.process = psutil.Process(os.getpid())
+        if psutil:
+            self.process = psutil.Process(os.getpid())
+        else:
+            self.process = None
 
         self._set_log_file_to_logger()
 
@@ -66,8 +74,10 @@ class MyLogger:
         """
             Return the rss of the cpu ram
         """
-        rss = self.process.memory_info().rss / (1024 ** 2)
-        return rss
+        if self.process:
+            rss = self.process.memory_info().rss / (1024 ** 2)
+            return rss
+        return 0.0
 
 
     def current_gpu_mem_usage(self):
@@ -217,7 +227,6 @@ class CheckPointing:
 
         assert self.current_experiment_id is not None
         assert self.current_experiment_log_path is not None
-        assert self.current_experiment["id"] == self.all_experiments[-1]["id"]
 
         if not self.eval:
             cfg.paths.set_result_encoder_dir(cfg.paths.output_dir + f"/encoder_{self.current_experiment_id}/")
@@ -284,6 +293,7 @@ class CheckPointing:
                     "start_time": datestr,
                     "train_started": True,
                     "finished": False,
+                    "training_log_name": self.cfg.logger.train_log_name,
                     "log_details_file": self.current_experiment_log_path
                 }
                 all_experiments.append(current_experiment)
