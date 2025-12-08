@@ -81,6 +81,7 @@ class MyFaiss():
 
         #Init the index
         index = faiss.GpuIndexIVFPQ(gpu_resources, quantizer, self.hidden_size, num_clusters, num_quantizers, nbits)
+
         # useFloat16LookupTables was removed in newer FAISS versions
         if hasattr(index, 'useFloat16LookupTables'):
             index.useFloat16LookupTables = self.use_amp
@@ -272,4 +273,3 @@ class MyFaiss():
         faiss.write_index(faiss.index_gpu_to_cpu(self.faiss_index), self.save_index_path)
         print(f'FAISS Index saved to {self.save_index_path}')
         return self.save_index_path
-

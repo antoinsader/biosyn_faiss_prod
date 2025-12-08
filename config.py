@@ -150,13 +150,6 @@ class ModelConfig:
     encoding_type : EncodingType = EncodingType.CLS_AND_BETWEEN_SPANS
 
 
-
-@dataclass
-class InferenceConfig:
-    mention: str = ""
-    topk: int = 5
-
-
 @dataclass
 class TrainingConfig:
     num_epochs: int = 10
@@ -229,7 +222,6 @@ class GlobalConfig:
     logger: LoggerConfig = field(default_factory=LoggerConfig)
     inference: InferenceConfig = field(default_factory=InferenceConfig)
 
-    inference: InferenceConfig = field(default_factory=InferenceConfig)
     skip_eval: bool = False
     skip_train: bool = False
     eval_encoder_dir:str = ""
