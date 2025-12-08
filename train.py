@@ -68,8 +68,7 @@ class Trainer:
                 - We do backpropogation, scale, optimize, update and step
                 - We calculate accuracy and mrr metrics for the batch
         """
-        # self.model.optimizer.zero_grad(set_to_none=True) # Moved to step logic
-
+        self.model.optimizer.zero_grad()
         with torch.amp.autocast(device_type="cuda", enabled=(self.use_cuda and self.cfg.train.use_amp)):
             batch_x, batch_y = data_loader_item
             batch_query_tokens, batch_candidates_tokens = batch_x
@@ -91,13 +90,11 @@ class Trainer:
             self.model.optimizer.zero_grad(set_to_none=True)
 
 
-        # Compute metrics only at intervals
-        if (batch_idx + 1) % self.cfg.train.metric_compute_interval == 0:
-            accuracy_5, mrr, batch_margin = compute_metrics(batch_scores, batch_y, k=5)
-            return loss.detach() * self.cfg.train.gradient_accumulation_steps, accuracy_5, mrr, batch_margin
-        
-        # Return None for metrics if not computed
-        return loss.detach() * self.cfg.train.gradient_accumulation_steps, None, None, None
+        accuracy_5, mrr, batch_margin = compute_metrics(batch_scores, batch_y, k=5)
+
+
+        del batch_x, batch_y, batch_scores
+        return loss.detach(), accuracy_5, mrr, batch_margin
 
 
 
@@ -169,20 +166,14 @@ class Trainer:
         n_metric_batches = 0
         epoch_loss_tensor = 0.0
         for i, data_loader_item in tqdm(enumerate(my_loader), total=len(my_loader), desc=f"epoch@{epoch} - Training batches"):
-            loss, accuracy_5, mrr, batch_margin = self.train_one_batch(data_loader_item, i)
-            
-            if torch.is_tensor(loss):
-                epoch_loss_tensor += loss.detach()
-            else:
-                epoch_loss_tensor += loss
-            
-            if accuracy_5 is not None:
-                epoch_accuracy_5 += accuracy_5
-                epoch_mrr += mrr
-                epoch_margin += batch_margin
-                n_metric_batches += 1
-            
+            loss, accuracy_5, mrr, batch_margin = self.train_one_batch(data_loader_item)
+            epoch_loss += loss.item()
+            epoch_accuracy_5 += accuracy_5
+            epoch_mrr += mrr
+            epoch_margin += batch_margin
             n_batches += 1
+            if i % 100 == 0:
+                self.logger.log_event(f"Training stats - batch {i}", message=f"Loss: {loss.item():.4f}", log_memory=True, epoch=epoch)
 
             # if i % 100 == 0:
             #     self.logger.log_event(f"Training stats - batch {i}", message=f"Loss: {loss.item():.4f}", log_memory=True, epoch=epoch)
@@ -192,17 +183,16 @@ class Trainer:
         else:
             epoch_loss = epoch_loss_tensor
 
-        avg_loss = (epoch_loss / max(1, n_batches))
-        avg_mrr = (epoch_mrr / max(1, n_metric_batches))
-        avg_accuracy_5 = (epoch_accuracy_5 / max(1, n_metric_batches))
-        avg_margin = (epoch_margin / max(1, n_metric_batches))  # Average
-
+        avg_loss = epoch_loss / max(1, n_batches)
+        avg_mrr = epoch_mrr / max(1, n_batches)
+        avg_accuracy_5 = epoch_accuracy_5 / max(1, n_batches)
         self.logger.log_event(
             "Epoch summary",
             message=f"Epoch average loss={avg_loss:.3f}, average margin={avg_margin:.4f}, average mrr={avg_mrr:.4f}, average accuracy@5={avg_accuracy_5:.4f}.   loss_temp={self.cfg.train.loss_temperature:.3f}",
             epoch=epoch,
             t0=batches_train_start_time
         )
+
 
 
         del my_loader
@@ -295,9 +285,6 @@ class Trainer:
 
         self.encoder.save_state(self.result_encoder_dir)
         self.save_checkpoint(epoch='last')
-        self.faiss.save_index()
-
-    
 
         self.logger.log_event("Train finished", t0=full_train_start_time, log_memory=False)
         self.logger.log_event("Main info: " , message=self.checkpointing.current_experiment, log_memory=False)

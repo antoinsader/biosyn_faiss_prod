@@ -81,7 +81,6 @@ class MyFaiss():
 
         #Init the index
         index = faiss.GpuIndexIVFPQ(gpu_resources, quantizer, self.hidden_size, num_clusters, num_quantizers, nbits)
-
         # useFloat16LookupTables was removed in newer FAISS versions
         if hasattr(index, 'useFloat16LookupTables'):
             index.useFloat16LookupTables = self.use_amp

@@ -14,8 +14,8 @@ from config import GlobalConfig, tokenizer_parse_args
 from helpers.Data import TokensPaths, load_queries, load_dictionary
 
 
-# os.environ["TOKENIZERS_PARALLELISM"] = "false"
-# os.environ["TOKENIZERS_NUM_THREADS"] = str(min(8, os.cpu_count() or 8))
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
+os.environ["TOKENIZERS_NUM_THREADS"] = str(min(8, os.cpu_count() or 8))
 
 
 def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, max_length, batch_size, tokenizer):
@@ -27,10 +27,11 @@ def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, ma
         lambda e: tokenizer(e["text"], padding="max_length", truncation=True, max_length=max_length),
         batched=True,
         batch_size=20_000,
-        num_proc=  os.cpu_count() if torch.cuda.is_available() else 1  
+        num_proc=os.cpu_count()
     )
-    print(f"Finished tokenizing, saving..")
 
+
+    
     input_ids_mmap = np.memmap(
         input_ids_memmap_path,
         mode="w+",
@@ -45,6 +46,7 @@ def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, ma
         shape=(N, max_length)
     )
 
+    print(f"Finished tokenizing, saving..")
 
     for start in tqdm(range(0, N, batch_size), desc=f"Saving tokens"):
         end = min(start+batch_size, N)
@@ -57,7 +59,7 @@ def tokenize_names(names, input_ids_memmap_path, attention_masks_memmap_path, ma
     att_mask_mmap.flush()
 
     return (N, max_length)
-
+    
 def split_queries(cfg: GlobalConfig, train_queries_key='train_queries', test_queries_key='test_queries'):
     token_groups =  cfg.paths.get_default_token_groups()
     train_queries_paths = token_groups[train_queries_key]
@@ -83,7 +85,7 @@ def split_queries(cfg: GlobalConfig, train_queries_key='train_queries', test_que
     train_n = len(train_cuis)
     assert train_n == train_shape[0], f"train shape: {train_shape} is not the same as train_n: {train_n}"
 
-    split_idx = int(train_n * (1 - cfg.tokenize.test_split_percentage))
+    split_idx = int(train_n * ( 1- cfg.tokenize.test_split_percentage) )
 
     random_rng = np.random.default_rng(seed=42)
     shuffled_random_indices = random_rng.permutation(train_n)
@@ -298,51 +300,24 @@ if __name__=="__main__":
             json.dump(meta, f)
 
 
-    
     if not cfg.tokenize.skip_tokenize_test_queries:
 
+        print(f"Reading test queries...")
         test_tokens_paths = TokensPaths(cfg, dictionary_key='dictionary', queries_key='test_queries')
 
 
-        test_queries = load_queries(
-            data_dir=cfg.paths.test_queries_raw_dir,
-            queries_max_length=queries_max_length,
-            special_token_start=mention_start_special_token ,
-            special_token_end=mention_end_special_token,
-            tokenizer=tokenizer)
-
-
-
-
-        test_queries_cuis = [q[1].replace("MESH:", "") for q in test_queries]
-        if cfg.tokenize.queries_annotate:
-            # taking annotated sentences as the query names to tokenize 
-            test_queries_names = [q[2] for q in test_queries]
-        else:
-            # taking only query mentions as the query names to tokenize 
-            test_queries_names = [q[0] for q in test_queries]
-            queries_max_length = cfg.tokenize.queries_without_annotate_max_length
-
-
+        test_queries = load_queries(cfg.paths.queries_raw_dir)
+        test_queries_cuis = [q[1] for q in test_queries]
+        test_queries_names = [q[0] for q in test_queries]
         np.save(test_tokens_paths.queries_cuis_path, test_queries_cuis)
 
-        tokenize_names(test_queries_names, 
-                       test_tokens_paths.queries_input_ids_path, 
-                       test_tokens_paths.queries_attention_mask_path, 
-                       max_length=queries_max_length,
-                       batch_size=tokenize_batch_size, tokenizer = tokenizer)
+        tokenize_names(test_queries_names, test_tokens_paths.queries_input_ids_path, test_tokens_paths.queries_attention_mask_path, max_length=queries_max_length)
 
         meta = {"shape": (len(test_queries_cuis), queries_max_length)}
         with open(test_tokens_paths.queries_meta  , "w") as f:
             json.dump(meta, f)
 
 
-    if queries_cuis is not None and dictionary_cuis is not None:
-        d = set(dictionary_cuis)
-        for q in queries_cuis:
-            assert q in d, f"query cui {q} is not in the dictionary cuis"
-
 
     if cfg.tokenize.split_train_queries:
         split_queries(cfg, 'train_queries', 'test_queries')
-        

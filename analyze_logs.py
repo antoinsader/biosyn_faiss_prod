@@ -22,10 +22,8 @@ def list_logs(logs):
     for i, log in enumerate(logs):
         name = log.get("training_log_name", "Unknown")
         is_finished = log.get("finished", False)
-        result_encoder_dir = log.get("result_encoder_dir", "")
         status = "(finished)" if is_finished else "(not finished)"
-        id = log.get("id", "")
-        print(f"{i+1}. {name} {status} {result_encoder_dir}, id: {id}")
+        print(f"{i + 1} - {name} {status}")
 
 def get_epoch_summaries(log_file_path):
     if not os.path.exists(log_file_path):

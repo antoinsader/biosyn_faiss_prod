@@ -466,7 +466,6 @@ def load_queries(data_dir, queries_max_length, special_token_start="[MS]" ,token
     print(f"annotation_skipped: {annotation_skipped}")
     if filter_duplicate:
         data = list(dict.fromkeys(data))
-    # data = np.array(data) # Optimization: Return list to avoid slow numpy conversion of strings
     return data
 
 
@@ -478,10 +477,7 @@ def load_dictionary_old(dictionary_path, dictionary_max_chars_length, special_to
             line = line.strip()
             if line == "": continue
             cui, name = line.split("||")
-            if len(name) > dictionary_max_chars_length: continue
-            name_annotated = special_token_start + " "  + name + " " + special_token_end
-            data.append((name,cui, name_annotated.strip()))
-    data = np.array(data)
+            data.append((name,cui))
     return data
 
 def load_dictionary(dictionary_path, dictionary_max_chars_length, special_token_start="[MS]" , special_token_end="[ME]", add_synonyms=False):

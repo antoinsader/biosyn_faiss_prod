@@ -31,14 +31,6 @@ def tokenize_mention(cfg,  tokenizer):
     """
     Tokenize a single mention
     """
-    mention = cfg.inference.mention
-    max_length = cfg.tokenize.queries_max_length
-    
-    mention_start_special_token = cfg.tokenize.special_tokens_dict["mention_start"]
-    mention_end_special_token = cfg.tokenize.special_tokens_dict["mention_end"]
-
-    mention = mention_start_special_token + " " + mention + " " + mention_end_special_token
-    
     encoded = tokenizer(
         mention,
         padding="max_length",
@@ -65,17 +57,16 @@ def main():
     # Load encoder
     print(f"Loading encoder from: {cfg.paths.result_encoder_dir}")
     encoder = MyEncoder(cfg)
-    encoder.load_state(cfg.paths.result_encoder_dir)
-    encoder.encoder.eval()
+    encoder.to(device)
+    encoder.eval()
     
     # Load tokenizer
     print("Loading tokenizer...")
-    tokenizer = AutoTokenizer.from_pretrained(cfg.model.model_name, use_fast=True)
-    tokenizer.add_special_tokens(cfg.tokenize.special_tokens)
+    tokenizer = AutoTokenizer.from_pretrained(args.model_dir, use_fast=True)
     
     # Tokenize mention
-    print(f"\nProcessing mention: '{cfg.inference.mention}'")
-    mention_tokens = tokenize_mention(cfg, tokenizer)
+    print(f"\nProcessing mention: '{args.mention}'")
+    mention_tokens = tokenize_mention(args.mention, tokenizer, args.max_length)
     mention_tokens = {k: v.to(device) for k, v in mention_tokens.items()}
     
     # Get mention embedding
@@ -111,7 +102,7 @@ def main():
     else:
         mention_embed = mention_embed.cpu().numpy().astype(np.float32)
     
-    _, candidate_idxs = faiss.faiss_index.search(mention_embed, cfg.inference.topk * 5)
+    _, candidate_idxs = faiss.faiss_index.search(mention_embed, args.topk)
     candidate_idxs = candidate_idxs[0]  # Get first (and only) query's results
     
     # Load dictionary CUIs
@@ -162,4 +153,5 @@ def main():
 
 
 if __name__ == '__main__':
-    results = main()
+    args = parse_args()
+    results = main(args)
