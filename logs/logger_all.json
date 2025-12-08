@@ -77,29 +77,10 @@
   },
   {
     "id": 5,
-    "start_time": "2025-12-06_17-36-58",
-    "train_started": true,
-    "finished": true,
-    "training_log_name": "exp_6",
-    "log_details_file": "./logs/log_5_2025-12-06_17-36-58.log",
-    "end_date": "2025-12-06_17-48-24",
-    "queries_size": 5689,
-    "dictionary_size": 90510,
-    "trained_period": "0h, 11mins, 23secs",
-    "epochs": 10,
-    "last_faiss_recall@15": 0.9674811038846898,
-    "last_avg_acc_5": 0.9674719099918109,
-    "last_avg_mrr": 0.9671793071071754,
-    "last_avg_loss": 0.011673104896974028,
-    "result_encoder_dir": "./output/encoder_5/",
-    "eval_started": true
-  },
-  {
-    "id": 6,
     "start_time": "2025-12-06_23-17-41",
     "train_started": true,
     "finished": true,
-    "training_log_name": "exp_7 only spans",
+    "training_log_name": "exp_6 only spans",
     "log_details_file": "./logs/log_6_2025-12-06_23-17-41.log",
     "end_date": "2025-12-06_23-38-51",
     "queries_size": 5689,
@@ -110,12 +91,12 @@
     "last_avg_acc_5": 0.985252808988764,
     "last_avg_mrr": 0.9853039331985324,
     "last_avg_loss": 0.008399496587474695,
-    "result_encoder_dir": "./output/encoder_6/"
+    "result_encoder_dir": "./output/encoder_5/"
   },
   {
-    "id": 7,
+    "id": 6,
     "start_time": "2025-12-07_00-16-56",
-    "training_log_name": "exp_8 cls and between spans",
+    "training_log_name": "exp_7 cls and between spans",
     "train_started": true,
     "finished": true,
     "log_details_file": "./logs/log_7_2025-12-07_00-16-56.log",
@@ -128,7 +109,7 @@
     "last_avg_acc_5": 0.985252808988764,
     "last_avg_mrr": 0.9850811486163836,
     "last_avg_loss": 0.0024638666530673423,
-    "result_encoder_dir": "./output/encoder_7/"
+    "result_encoder_dir": "./output/encoder_6/"
   },
   {
     "id": 12,
