@@ -89,6 +89,7 @@ class TokensConfig:
     tokenize_batch_size : int = 128_000
     raw_test_dir:str = None
 
+    strip_mesh : bool = False
     skip_tokenize_dictionary: bool = False
     skip_tokenize_queries: bool = False
     skip_tokenize_test_queries: bool = False
@@ -270,6 +271,8 @@ def tokenizer_parse_args():
     parser.add_argument('--dictionary_annotation_add_synonyms',  action="store_true")
     parser.add_argument('--no_queries_annotate',  action="store_true")
     parser.add_argument('--no_dictionaries_annotate',  action="store_true")
+    
+    parser.add_argument('--strip_mesh',  action="store_true")
 
     args = parser.parse_args()
 
@@ -321,6 +324,10 @@ def tokenizer_parse_args():
     else:
         cfg.tokenize.dictionaries_annotate = True
 
+    if args.strip_mesh:
+        cfg.tokenize.strip_mesh = True
+    else:
+        cfg.tokenize.strip_mesh = False
 
     return cfg
 

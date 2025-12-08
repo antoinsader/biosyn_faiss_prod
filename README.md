@@ -113,6 +113,7 @@ python tokenizer.py
 | `--skip_tokenizing_queries` | bool | False | Skip query tokenization |
 | `--split_train_queries` | bool | False | Split traindev queries into train/test sets, you can control the percentage with `test_split_percentage`, in case you don't have test_queries_dir |
 | `--test_split_percentage` | float | 0.2 | Fraction of traindev queries used for training, you should --split_train_queries to use this argument |
+| `--strip_mesh` | bool | False | If true, CUIs' strings will be stripped from 'MESH:' |
 
 
 

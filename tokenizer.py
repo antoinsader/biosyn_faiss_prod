@@ -240,7 +240,10 @@ if __name__=="__main__":
             special_token_end=mention_end_special_token,
             tokenizer=tokenizer)
 
-        queries_cuis = [q[1].replace("MESH:", "") for q in train_queries]
+
+        if cfg.tokenize.strip_mesh:
+            queries_cuis = [q[1].replace("MESH:", "") for q in train_queries]
+
         if cfg.tokenize.queries_annotate:
             # taking annotated sentences as the query names to tokenize 
             queries_names = [q[2] for q in train_queries]
@@ -273,7 +276,10 @@ if __name__=="__main__":
                                     dictionary_max_chars_length=dictionary_max_chars_length,
                                     add_synonyms=bool(cfg.tokenize.dictionaries_annotate and cfg.tokenize.dictionary_annotation_add_synonyms)
                                      )
-        dictionary_cuis = [d.replace("MESH:", "") for d in dictionary_cuis]
+        
+        if cfg.tokenize.strip_mesh:
+            dictionary_cuis = [d.replace("MESH:", "") for d in dictionary_cuis]
+
         
         if cfg.tokenize.dictionaries_annotate:
             shape = tokenize_names(dictionary_names_annotated, tokens_paths.dictionary_input_ids_path, tokens_paths.dictionary_attention_mask_path, max_length=dictionary_max_length, 
@@ -313,8 +319,9 @@ if __name__=="__main__":
 
 
 
+        if cfg.tokenize.strip_mesh:
+            test_queries_cuis = [q[1].replace("MESH:", "") for q in test_queries]
 
-        test_queries_cuis = [q[1].replace("MESH:", "") for q in test_queries]
         if cfg.tokenize.queries_annotate:
             # taking annotated sentences as the query names to tokenize 
             test_queries_names = [q[2] for q in test_queries]
