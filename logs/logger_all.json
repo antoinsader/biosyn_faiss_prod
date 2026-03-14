@@ -109,7 +109,8 @@
     "last_avg_acc_5": 0.985252808988764,
     "last_avg_mrr": 0.9850811486163836,
     "last_avg_loss": 0.0024638666530673423,
-    "result_encoder_dir": "./output/encoder_6/"
+    "result_encoder_dir": "./output/encoder_6/",
+    "eval_started": true
   },
   {
     "id": 12,

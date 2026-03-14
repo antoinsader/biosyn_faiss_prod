@@ -1,4 +1,5 @@
 import argparse
+from collections import defaultdict
 import os
 import torch
 import numpy as np
@@ -34,10 +35,10 @@ def tokenize_mention(cfg,  tokenizer):
     mention = cfg.inference.mention
     max_length = cfg.tokenize.queries_max_length
     
-    mention_start_special_token = cfg.tokenize.special_tokens_dict["mention_start"]
-    mention_end_special_token = cfg.tokenize.special_tokens_dict["mention_end"]
+    # mention_start_special_token = cfg.tokenize.special_tokens_dict["mention_start"]
+    # mention_end_special_token = cfg.tokenize.special_tokens_dict["mention_end"]
 
-    mention = mention_start_special_token + " " + mention + " " + mention_end_special_token
+    # mention = mention_start_special_token + " " + mention + " " + mention_end_special_token
     
     encoded = tokenizer(
         mention,
@@ -53,6 +54,7 @@ def tokenize_mention(cfg,  tokenizer):
     }
 
 
+
 def main():
     # Setup device
     use_cuda = torch.cuda.is_available()
@@ -61,13 +63,13 @@ def main():
     
     # Load configuration
     cfg = inference_parse_args()
-    
+
     # Load encoder
     print(f"Loading encoder from: {cfg.paths.result_encoder_dir}")
     encoder = MyEncoder(cfg)
     encoder.load_state(cfg.paths.result_encoder_dir)
     encoder.encoder.eval()
-    
+
     # Load tokenizer
     print("Loading tokenizer...")
     tokenizer = AutoTokenizer.from_pretrained(cfg.model.model_name, use_fast=True)
@@ -117,10 +119,15 @@ def main():
     # Load dictionary CUIs
     dictionary_cuis = np.load(tokens_paths.dictionary_cuis_path)
     
+    dictionary_cui_to_syns = defaultdict(list)
+    
     # Load dictionary names (optional, for display)
     try:
         dictionary_data = load_dictionary_names()
         dictionary_dict = {cui: name for name, cui in dictionary_data}
+        for d_name , d_cui in dictionary_data:
+            dictionary_cui_to_syns[d_cui].append(d_name)
+        
     except Exception as e:
         print(f"Warning: Could not load dictionary names: {e}")
         dictionary_dict = {}
@@ -156,8 +163,9 @@ def main():
         print(f"{rank}. CUI: {cui}")
         if name != "N/A":
             print(f"   Name: {name}")
+            print(f"    Synonyms: {dictionary_cui_to_syns[cui]}")
         print()
-    
+
     return results
 
 

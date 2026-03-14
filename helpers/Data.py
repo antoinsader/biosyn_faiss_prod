@@ -40,6 +40,7 @@ class TokensPaths():
         self.queries_attention_mask_path = queries_paths['attention_mask']
         self.queries_cuis_path = queries_paths['cuis']
         self.queries_meta = queries_paths['meta']
+        print(f"********************** qqq: {queries_paths['meta']}")
         if os.path.exists(queries_paths['meta']):
             self.queries_shape = self.load_mmap_shape(queries_paths['meta'])
 
@@ -469,7 +470,7 @@ def load_queries(data_dir, queries_max_length, special_token_start="[MS]" ,token
     return data
 
 
-def load_dictionary_old(dictionary_path, dictionary_max_chars_length, special_token_start="[MS]" , special_token_end="[ME]"):
+def load_dictionary_old(dictionary_path):
     data = []
     with open(dictionary_path, mode='r', encoding='utf-8') as f:
         lines = f.readlines()

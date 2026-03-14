@@ -241,8 +241,8 @@ if __name__=="__main__":
             tokenizer=tokenizer)
 
 
-        if cfg.tokenize.strip_mesh:
-            queries_cuis = [q[1].replace("MESH:", "") for q in train_queries]
+        # if cfg.tokenize.strip_mesh:
+        queries_cuis = [q[1].replace("MESH:", "") for q in train_queries]
 
         if cfg.tokenize.queries_annotate:
             # taking annotated sentences as the query names to tokenize 
@@ -277,8 +277,8 @@ if __name__=="__main__":
                                     add_synonyms=bool(cfg.tokenize.dictionaries_annotate and cfg.tokenize.dictionary_annotation_add_synonyms)
                                      )
         
-        if cfg.tokenize.strip_mesh:
-            dictionary_cuis = [d.replace("MESH:", "") for d in dictionary_cuis]
+        # if cfg.tokenize.strip_mesh:
+        dictionary_cuis = [d.replace("MESH:", "") for d in dictionary_cuis]
 
         
         if cfg.tokenize.dictionaries_annotate:
@@ -319,8 +319,7 @@ if __name__=="__main__":
 
 
 
-        if cfg.tokenize.strip_mesh:
-            test_queries_cuis = [q[1].replace("MESH:", "") for q in test_queries]
+        test_queries_cuis = [q[1].replace("MESH:", "") for q in test_queries]
 
         if cfg.tokenize.queries_annotate:
             # taking annotated sentences as the query names to tokenize 

@@ -376,9 +376,16 @@ def inference_parse_args():
     parser.add_argument('--result_encoder_dir', required=True,
                         help='Result encoder dir, you should have this after tain, the dir is where the encoder files are saved')
 
+    
+    
+
+
     # Optional arguments
     parser.add_argument('--topk', type=int, default=5,
                         help='Number of top candidates to retrieve (default: 5)')
+    
+    parser.add_argument('--output_dir', type=str,
+                        help='Name of the dir where to save the results')
     
 
     args = parser.parse_args()

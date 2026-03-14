@@ -257,9 +257,10 @@ class MyFaiss():
             Read FAISS index from path
         """
         assert os.path.exists(path),f'Path faiss {path} not exists'
-        gpu_resources = faiss.StandardGpuResources()
+        
         index = faiss.read_index(path)
         if self.use_cuda:
+            gpu_resources = faiss.StandardGpuResources()
             co = faiss.GpuClonerOptions()
             co.allowCpuCoarseQuantizer = True
             index = faiss.index_cpu_to_gpu(gpu_resources, 0 , index, co)
