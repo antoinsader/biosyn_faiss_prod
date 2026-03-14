@@ -4,7 +4,7 @@
 
 ## BioSyn: State-of-the-Art but Limited
 
-[BioSyn](https://github.com/dmis-lab/BioSyn)
+Biosyn repo: [BioSyn](https://github.com/dmis-lab/BioSyn)
 
 We address two limitations:
 #### Scalability Bottleneck:
