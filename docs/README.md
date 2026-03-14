@@ -27,7 +27,7 @@ We transition from the “mention only” encoding into “full-sentence” enco
 Combine global sentence context with local mention-specific context.
 
 ## Training pipeline:
-(training_pipeline)[/docs/training_pipeline.png]
+![training_pipeline](training_pipeline.png)
 
 ## Experimental Evaluation
 We designed for each benchmark a progressive series of experiments to evaluate the impact of each contribution in our methodology
@@ -68,8 +68,8 @@ Increases the retrieval candidates from the default 20 to 40 candidates
 The margin is defined as the difference between the average similarity score of the positive candidates (correct synonyms) and the average similarity score of the negative candidates (hard negatives).
 A positive, increasing margin indicates that the model is successfully pushing the correct concepts closer to the query while repelling incorrect ones.
 
-(Training margin - small-scale)[training_margin_1.png]
-(Training margin - large-scale)[training_margin_2.png]
+![Training margin - small-scale](training_margin_1.png)
+![Training margin - large-scale](training_margin_2.png)
 
 ### Training Efficiency:
 
@@ -77,7 +77,7 @@ A positive, increasing margin indicates that the model is successfully pushing t
 - 9.1 minutes after FAISS introduction + 4.3 minutes for separate tokenization
 - **≈250%** speedup in performance achieved
 
-(Training time)[training_time.png]
+![Training time](training_time.png)
 
 ### Small scale dataset - Accuracy@1:
 
@@ -85,7 +85,7 @@ A positive, increasing margin indicates that the model is successfully pushing t
 - Introducing FAISS: 89.99%
 - Our context-aware method : 91.55%
 
-(Evaluation - small scale dataset)[evaluation_acc_1.png]
+![Evaluation - small scale dataset](evaluation_acc_1.png)
 
 
 ### Large scale dataset - Accuracy@1:
@@ -94,7 +94,7 @@ A positive, increasing margin indicates that the model is successfully pushing t
 - Introducing FAISS: 85.6%
 - Our context-aware method : 89.93%
 
-(Evaluation - large scale dataset)[evaluation_acc_2.png]
+![Evaluation - large scale dataset](evaluation_acc_2.png)
 
 
 
