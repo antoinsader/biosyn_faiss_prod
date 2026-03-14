@@ -5,7 +5,7 @@ Deep learning retrieval system for learning the matching between mentions (queri
 This model was trained on the NCBI dataset and it is designed to learn semantic matching between biomedical terms.
 
 ![Evaluation results](docs/evaluation_results_chart.png)
-For more info about the research project, look at [Research](docs/ACHIEVEMENTS.md)
+For more info about the research project, look at [Research](docs/README.md)
 
 ---
 
