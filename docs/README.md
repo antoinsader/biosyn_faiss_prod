@@ -27,7 +27,7 @@ We transition from the “mention only” encoding into “full-sentence” enco
 Combine global sentence context with local mention-specific context.
 
 ## Training pipeline:
-(training_pipeline)[training_pipeline.png]
+(training_pipeline)[/docs/training_pipeline.png]
 
 ## Experimental Evaluation
 We designed for each benchmark a progressive series of experiments to evaluate the impact of each contribution in our methodology
